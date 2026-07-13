@@ -8,5 +8,6 @@
     "java.project.referencedLibraries": [
         "lib/junit-platform-console-standalone-6.1.1.jar"
     ],
-    "java.configuration.updateBuildConfiguration": "disabled"
+    "java.configuration.updateBuildConfiguration": "disabled",
+    "terminal.integrated.defaultProfile.windows": "Git Bash"
 }

@@ -4,14 +4,9 @@
         {
             "label": "Compile production sources",
             "type": "process",
-            "command": "powershell.exe",
+            "command": "bash",
             "args": [
-                "-NoProfile",
-                "-ExecutionPolicy",
-                "Bypass",
-                "-File",
-                "${workspaceFolder}\\scripts\\compile.ps1",
-                "-Target",
+                "${workspaceFolder}/scripts/compile.sh",
                 "main"
             ],
             "options": {
@@ -26,14 +21,9 @@
         {
             "label": "Compile test sources",
             "type": "process",
-            "command": "powershell.exe",
+            "command": "bash",
             "args": [
-                "-NoProfile",
-                "-ExecutionPolicy",
-                "Bypass",
-                "-File",
-                "${workspaceFolder}\\scripts\\compile.ps1",
-                "-Target",
+                "${workspaceFolder}/scripts/compile.sh",
                 "test"
             ],
             "options": {
@@ -45,14 +35,10 @@
         {
             "label": "Run all JUnit tests",
             "type": "process",
-            "command": "powershell.exe",
+            "command": "bash",
             "args": [
-                "-NoProfile",
-                "-ExecutionPolicy",
-                "Bypass",
-                "-File",
-                "${workspaceFolder}\\scripts\\test.ps1",
-                "-NoBuild"
+                "${workspaceFolder}/scripts/test.sh",
+                "--no-build"
             ],
             "options": {
                 "cwd": "${workspaceFolder}"

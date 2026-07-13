@@ -34,31 +34,30 @@ jobs:
 
       - name: Detect production sources
         id: source_check
-        shell: pwsh
+        shell: bash
         run: |
-          $sources = @(Get-ChildItem -LiteralPath "src/main/java" -Recurse -File -Filter "*.java" -ErrorAction SilentlyContinue)
-          if ($sources.Count -eq 0) {
-            "has_sources=false" >> $env:GITHUB_OUTPUT
-            Write-Host "No production Java sources found. CI is skipped until implementation is added."
-          }
-          else {
-            "has_sources=true" >> $env:GITHUB_OUTPUT
-            Write-Host "Found $($sources.Count) production source file(s)."
-          }
+          production_source="$(find src/main/java -type f -name '*.java' -print -quit)"
+          if [[ -n "$production_source" ]]; then
+            echo "has_sources=true" >> "$GITHUB_OUTPUT"
+            echo "Production Java sources found."
+          else
+            echo "has_sources=false" >> "$GITHUB_OUTPUT"
+            echo "No production Java sources found. CI is skipped until implementation is added."
+          fi
 
       - name: Download JUnit launcher
         if: steps.source_check.outputs.has_sources == 'true'
-        shell: pwsh
+        shell: bash
         run: |
-          New-Item -ItemType Directory -Force lib | Out-Null
-          Invoke-WebRequest `
-            -Uri "https://repo1.maven.org/maven2/org/junit/platform/junit-platform-console-standalone/6.1.1/junit-platform-console-standalone-6.1.1.jar" `
-            -OutFile "lib/junit-platform-console-standalone-6.1.1.jar"
+          mkdir -p lib
+          curl --fail --silent --show-error --location \
+            "https://repo1.maven.org/maven2/org/junit/platform/junit-platform-console-standalone/6.1.1/junit-platform-console-standalone-6.1.1.jar" \
+            --output "lib/junit-platform-console-standalone-6.1.1.jar"
 
       - name: Compile and run JUnit tests
         if: steps.source_check.outputs.has_sources == 'true'
-        shell: pwsh
-        run: ./scripts/test.ps1
+        shell: bash
+        run: bash ./scripts/test.sh
 
       - name: Upload JUnit reports
         if: always() && steps.source_check.outputs.has_sources == 'true'

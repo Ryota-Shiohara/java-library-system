@@ -4,22 +4,23 @@
 
 このプロジェクトはMavenやGradleを使わず、アプリケーション本体をJava SEだけでコンパイルする。JUnitはテスト専用の外部ライブラリとして、JUnit Platform Console Standalone 6.1.1を使用する。
 
-現在の標準はJDK 17以上とし、`javac --release 17`でコンパイルする。JDK 21を使っていても、Java 17で動くコードとして確認できる。
+現在の標準はJDK 17以上とし、`javac --release 17`でコンパイルする。JDK 21を使っていても、Java 17で動くコードとして確認できる。実行スクリプトは全OSでbash版を標準とする。
 
 ## 初回セットアップ
 
 1. VS Codeに`Extension Pack for Java`をインストールする。
 2. プロジェクトのルートフォルダをVS Codeで開く。
-3. PowerShellで次を実行し、JUnit JARを取得する。
+3. JUnit JARを取得する。Mac/Linuxでは標準のbash、WindowsではGit Bashを使う。
 
-```powershell
-New-Item -ItemType Directory -Force lib | Out-Null
-Invoke-WebRequest `
-  -Uri "https://repo1.maven.org/maven2/org/junit/platform/junit-platform-console-standalone/6.1.1/junit-platform-console-standalone-6.1.1.jar" `
-  -OutFile "lib\junit-platform-console-standalone-6.1.1.jar"
+```bash
+mkdir -p lib
+curl --fail --location \
+  "https://repo1.maven.org/maven2/org/junit/platform/junit-platform-console-standalone/6.1.1/junit-platform-console-standalone-6.1.1.jar" \
+  --output "lib/junit-platform-console-standalone-6.1.1.jar"
 ```
 
 4. `java -version`と`javac -version`を実行し、JDKが使用できることを確認する。
+5. WindowsではGit for Windowsをインストールし、Git Bashで`bash --version`が実行できることを確認する。
 
 JUnit JARは`.gitignore`で除外されているため、Gitには追加しない。別のPCで作業するときは、そのPCでも同じJARを`lib`に配置する。
 
@@ -29,33 +30,42 @@ JUnit JARは`.gitignore`で除外されているため、Gitには追加しな�
 - コマンドパレットの`Tasks: Run Task`から`Compile test sources`: テストコードをコンパイルする。
 - コマンドパレットの`Tasks: Run Task`から`Run all JUnit tests`: 全JUnitテストをコンパイルして実行する。
 - テストの緑色の実行ボタンやTestingビューは、個別テストの実行・デバッグに利用できる。提出前の確認は`Run all JUnit tests`タスクを基準にする。
+- すべてのOSで`bash`版のスクリプトを使用する。WindowsではGit BashをVS Codeの既定ターミナルにする。
 
 Java拡張機能の言語サーバーが作るIDE用のクラスファイルは`out/ide`に置く。手動コンパイルの結果とは分離している。
 
-## PowerShellからの操作
+## コマンドラインからの操作
 
 本体だけをコンパイルする。
 
-```powershell
-.\scripts\compile.ps1 -Target main
+All OS with Bash:
+
+```bash
+bash ./scripts/compile.sh main
 ```
 
 本体とテストをコンパイルする。
 
-```powershell
-.\scripts\compile.ps1 -Target all
+All OS with Bash:
+
+```bash
+bash ./scripts/compile.sh all
 ```
 
 テストをコンパイル済みクラスから実行する。
 
-```powershell
-.\scripts\test.ps1 -NoBuild
+All OS with Bash:
+
+```bash
+bash ./scripts/test.sh --no-build
 ```
 
 コンパイルからテスト実行まで一度に行う。
 
-```powershell
-.\scripts\test.ps1
+All OS with Bash:
+
+```bash
+bash ./scripts/test.sh
 ```
 
 ## 生成物の場所
@@ -88,7 +98,7 @@ CIの処理は次のとおり。
 
 1. Ubuntu上にJDK 21を用意する。
 2. `src/main/java`にJavaファイルがある場合、JUnit JARを取得する。
-3. `scripts/test.ps1`で本体とテストをコンパイルし、JUnitを実行する。
+3. `bash scripts/test.sh`で本体とテストをコンパイルし、JUnitを実行する。
 4. `out/test-reports/`のJUnitレポートをGitHub ActionsのArtifactとして保存する。
 
 Javaソースがまだない初期状態では、CIをスキップして成功扱いにする。本体ソースが追加された後は、テストソースがない場合やテストが失敗した場合にCIを失敗させる。
