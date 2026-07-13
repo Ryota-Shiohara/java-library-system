@@ -27,7 +27,7 @@ class BookServiceTest {
     @Test
     void rejectsDuplicateAndUnsafeInventoryChanges() {
         InMemoryBookRepository repository = new InMemoryBookRepository();
-        BookService service = new BookService(repository, new StubLoanQuery(1));
+        BookService service = new BookService(repository, new StubLoanQuery(2));
         service.addBook("B1", "Title", "Genre", 2);
         assertThrows(DuplicateIdException.class, () -> service.addBook(" b1 ", "Other", "Genre", 1));
         assertThrows(OperationNotAllowedException.class, () -> service.updateBook("B1", "Title", "Genre", 1));
