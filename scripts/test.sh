@@ -20,6 +20,7 @@ project_root="$(cd "$script_directory/.." && pwd)"
 main_output="$project_root/out/main"
 test_output="$project_root/out/test"
 report_directory="$project_root/out/test-reports"
+temporary_directory="$project_root/out/test-tmp"
 junit_jar="$project_root/lib/junit-platform-console-standalone-6.1.1.jar"
 
 if ! command -v java >/dev/null 2>&1; then
@@ -38,12 +39,12 @@ for path in "$junit_jar" "$main_output" "$test_output"; do
   fi
 done
 
-rm -rf "$report_directory"
-mkdir -p "$report_directory"
+rm -rf "$report_directory" "$temporary_directory"
+mkdir -p "$report_directory" "$temporary_directory"
 
 class_path="$main_output:$test_output"
 echo "Running JUnit tests. Reports will be written to $report_directory"
-java -jar "$junit_jar" execute \
+java -Djava.io.tmpdir="$temporary_directory" -jar "$junit_jar" execute \
   --class-path "$class_path" \
   --scan-class-path \
   --fail-if-no-tests \

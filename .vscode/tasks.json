@@ -6,9 +6,12 @@
             "type": "process",
             "command": "bash",
             "args": [
-                "${workspaceFolder}/scripts/compile.sh",
-                "main"
+                "-lc",
+                "bash ./scripts/compile.sh main"
             ],
+            "windows": {
+                "command": "C:\\Program Files\\Git\\bin\\bash.exe"
+            },
             "options": {
                 "cwd": "${workspaceFolder}"
             },
@@ -23,9 +26,12 @@
             "type": "process",
             "command": "bash",
             "args": [
-                "${workspaceFolder}/scripts/compile.sh",
-                "test"
+                "-lc",
+                "bash ./scripts/compile.sh test"
             ],
+            "windows": {
+                "command": "C:\\Program Files\\Git\\bin\\bash.exe"
+            },
             "options": {
                 "cwd": "${workspaceFolder}"
             },
@@ -37,9 +43,12 @@
             "type": "process",
             "command": "bash",
             "args": [
-                "${workspaceFolder}/scripts/test.sh",
-                "--no-build"
+                "-lc",
+                "bash ./scripts/test.sh --no-build"
             ],
+            "windows": {
+                "command": "C:\\Program Files\\Git\\bin\\bash.exe"
+            },
             "options": {
                 "cwd": "${workspaceFolder}"
             },
