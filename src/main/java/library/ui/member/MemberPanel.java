@@ -4,6 +4,8 @@ import java.awt.BorderLayout;
 import java.awt.FlowLayout;
 import java.awt.Window;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JLabel;
@@ -23,6 +25,7 @@ import library.service.LoanService;
 import library.service.MemberService;
 
 public final class MemberPanel extends JPanel {
+    private static final Logger LOGGER = Logger.getLogger(MemberPanel.class.getName());
     private final MemberService memberService;
     private final LoanService loanService;
     private final Runnable dataChanged;
@@ -95,52 +98,58 @@ public final class MemberPanel extends JPanel {
     }
 
     private void addMember() {
-        MemberDialog dialog = new MemberDialog(owner(), null);
-        dialog.setVisible(true);
-        if (!dialog.isConfirmed()) {
-            return;
-        }
         try {
+            MemberDialog dialog = new MemberDialog(owner(), null);
+            dialog.setVisible(true);
+            if (!dialog.isConfirmed()) {
+                return;
+            }
             memberService.addMember(dialog.memberId(), dialog.memberName());
             dataChanged.run();
         } catch (LibraryException exception) {
             showError(exception.getMessage());
+        } catch (Exception exception) {
+            handleUnexpectedError(exception);
         }
     }
 
     private void editMember() {
-        Member selected = selectedMember();
-        if (selected == null) {
-            return;
-        }
-        MemberDialog dialog = new MemberDialog(owner(), selected);
-        dialog.setVisible(true);
-        if (!dialog.isConfirmed()) {
-            return;
-        }
         try {
+            Member selected = selectedMember();
+            if (selected == null) {
+                return;
+            }
+            MemberDialog dialog = new MemberDialog(owner(), selected);
+            dialog.setVisible(true);
+            if (!dialog.isConfirmed()) {
+                return;
+            }
             memberService.updateMember(selected.id(), dialog.memberName());
             dataChanged.run();
         } catch (LibraryException exception) {
             showError(exception.getMessage());
+        } catch (Exception exception) {
+            handleUnexpectedError(exception);
         }
     }
 
     private void deleteMember() {
-        Member selected = selectedMember();
-        if (selected == null) {
-            return;
-        }
-        int choice = JOptionPane.showConfirmDialog(this,
-                "Delete member " + selected.id() + "?", "Delete Member", JOptionPane.YES_NO_OPTION);
-        if (choice != JOptionPane.YES_OPTION) {
-            return;
-        }
         try {
+            Member selected = selectedMember();
+            if (selected == null) {
+                return;
+            }
+            int choice = JOptionPane.showConfirmDialog(this,
+                    "Delete member " + selected.id() + "?", "Delete Member", JOptionPane.YES_NO_OPTION);
+            if (choice != JOptionPane.YES_OPTION) {
+                return;
+            }
             memberService.deleteMember(selected.id());
             dataChanged.run();
         } catch (LibraryException exception) {
             showError(exception.getMessage());
+        } catch (Exception exception) {
+            handleUnexpectedError(exception);
         }
     }
 
@@ -150,21 +159,29 @@ public final class MemberPanel extends JPanel {
             refreshData();
         } catch (LibraryException exception) {
             showError(exception.getMessage());
+        } catch (Exception exception) {
+            handleUnexpectedError(exception);
         }
     }
 
     private void clearSearch() {
-        currentQuery = "";
-        searchField.setText("");
-        refreshData();
+        try {
+            currentQuery = "";
+            searchField.setText("");
+            refreshData();
+        } catch (LibraryException exception) {
+            showError(exception.getMessage());
+        } catch (Exception exception) {
+            handleUnexpectedError(exception);
+        }
     }
 
     private void showBorrowedBooks() {
-        Member selected = selectedMember();
-        if (selected == null) {
-            return;
-        }
         try {
+            Member selected = selectedMember();
+            if (selected == null) {
+                return;
+            }
             List<Book> books = loanService.findBorrowedBooksByMember(selected.id());
             String message = books.isEmpty()
                     ? selected.name() + " has no active loans."
@@ -173,6 +190,8 @@ public final class MemberPanel extends JPanel {
             JOptionPane.showMessageDialog(this, message, "Borrowed Books", JOptionPane.INFORMATION_MESSAGE);
         } catch (LibraryException exception) {
             showError(exception.getMessage());
+        } catch (Exception exception) {
+            handleUnexpectedError(exception);
         }
     }
 
@@ -193,5 +212,10 @@ public final class MemberPanel extends JPanel {
 
     private void showError(String message) {
         JOptionPane.showMessageDialog(this, message, "Library System", JOptionPane.ERROR_MESSAGE);
+    }
+
+    private void handleUnexpectedError(Exception exception) {
+        LOGGER.log(Level.SEVERE, "Unexpected error in member panel.", exception);
+        showError("An unexpected error occurred.");
     }
 }

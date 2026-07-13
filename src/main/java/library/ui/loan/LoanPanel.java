@@ -3,6 +3,8 @@ package library.ui.loan;
 import java.awt.BorderLayout;
 import java.awt.FlowLayout;
 import java.awt.Window;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JOptionPane;
@@ -19,6 +21,7 @@ import library.service.MemberService;
 import library.service.dto.LoanDetails;
 
 public final class LoanPanel extends JPanel {
+    private static final Logger LOGGER = Logger.getLogger(LoanPanel.class.getName());
     private final BookService bookService;
     private final MemberService memberService;
     private final LoanService loanService;
@@ -89,24 +92,28 @@ public final class LoanPanel extends JPanel {
             dataChanged.run();
         } catch (LibraryException exception) {
             showError(exception.getMessage());
+        } catch (Exception exception) {
+            handleUnexpectedError(exception);
         }
     }
 
     private void returnLoan() {
-        String loanId = selectedLoanId();
-        if (loanId == null) {
-            return;
-        }
-        int choice = JOptionPane.showConfirmDialog(this,
-                "Return the selected loan?", "Return Loan", JOptionPane.YES_NO_OPTION);
-        if (choice != JOptionPane.YES_OPTION) {
-            return;
-        }
         try {
+            String loanId = selectedLoanId();
+            if (loanId == null) {
+                return;
+            }
+            int choice = JOptionPane.showConfirmDialog(this,
+                    "Return the selected loan?", "Return Loan", JOptionPane.YES_NO_OPTION);
+            if (choice != JOptionPane.YES_OPTION) {
+                return;
+            }
             loanService.returnLoan(loanId);
             dataChanged.run();
         } catch (LibraryException exception) {
             showError(exception.getMessage());
+        } catch (Exception exception) {
+            handleUnexpectedError(exception);
         }
     }
 
@@ -126,5 +133,10 @@ public final class LoanPanel extends JPanel {
 
     private void showError(String message) {
         JOptionPane.showMessageDialog(this, message, "Library System", JOptionPane.ERROR_MESSAGE);
+    }
+
+    private void handleUnexpectedError(Exception exception) {
+        LOGGER.log(Level.SEVERE, "Unexpected error in loan panel.", exception);
+        showError("An unexpected error occurred.");
     }
 }
