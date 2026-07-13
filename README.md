@@ -2,6 +2,12 @@
 
 プログラミング第2同演習の最終課題用Javaプロジェクトです。
 
+## 実装計画
+
+- [共同実装計画](docs/team-plan.md)
+- [ryota 実装計画](docs/ryota-implementation-plan.md)
+- [kumpei 実装計画](docs/kumpei-implementation-plan.md)
+
 ## ディレクトリ構成
 
 ```text
