@@ -1,0 +1,12 @@
+{
+    "java.server.launchMode": "Standard",
+    "java.project.sourcePaths": [
+        "src/main/java",
+        "src/test/java"
+    ],
+    "java.project.outputPath": "out/ide",
+    "java.project.referencedLibraries": [
+        "lib/junit-platform-console-standalone-6.1.1.jar"
+    ],
+    "java.configuration.updateBuildConfiguration": "disabled"
+}

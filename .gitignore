@@ -8,7 +8,10 @@ data/
 
 # IDE files
 .idea/
-.vscode/
+.vscode/*
+!.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
 *.iml
 
 # OS files
@@ -18,4 +21,3 @@ Thumbs.db
 # Local and generated artifacts
 tmp/
 output/
-
