@@ -6,10 +6,10 @@ param(
 $ErrorActionPreference = "Stop"
 
 $projectRoot = Split-Path -Parent $PSScriptRoot
-$mainOutput = Join-Path $projectRoot "out\main"
-$testOutput = Join-Path $projectRoot "out\test"
-$reportDirectory = Join-Path $projectRoot "out\test-reports"
-$junitJar = Join-Path $projectRoot "lib\junit-platform-console-standalone-6.1.1.jar"
+$mainOutput = [IO.Path]::Combine($projectRoot, "out", "main")
+$testOutput = [IO.Path]::Combine($projectRoot, "out", "test")
+$reportDirectory = [IO.Path]::Combine($projectRoot, "out", "test-reports")
+$junitJar = [IO.Path]::Combine($projectRoot, "lib", "junit-platform-console-standalone-6.1.1.jar")
 $compileScript = Join-Path $PSScriptRoot "compile.ps1"
 
 try {

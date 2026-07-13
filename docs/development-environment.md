@@ -79,3 +79,16 @@ Java拡張機能の言語サーバーが作るIDE用のクラスファイルは`
 テストコンパイルでは、本体のクラスとJUnit JARをクラスパスに追加する。
 
 JUnit実行では、本体クラスとテストクラスだけをクラスパスに指定し、`--scan-class-path`でテストを自動検出する。テストが1件も見つからない場合も成功扱いにしないため、`--fail-if-no-tests`を指定している。
+
+## GitHub Actions CI
+
+`.github/workflows/ci.yml`で、`main`へのPush、`main`向けPull Request、手動実行を検証する。
+
+CIの処理は次のとおり。
+
+1. Ubuntu上にJDK 21を用意する。
+2. `src/main/java`にJavaファイルがある場合、JUnit JARを取得する。
+3. `scripts/test.ps1`で本体とテストをコンパイルし、JUnitを実行する。
+4. `out/test-reports/`のJUnitレポートをGitHub ActionsのArtifactとして保存する。
+
+Javaソースがまだない初期状態では、CIをスキップして成功扱いにする。本体ソースが追加された後は、テストソースがない場合やテストが失敗した場合にCIを失敗させる。

@@ -7,11 +7,11 @@ param(
 $ErrorActionPreference = "Stop"
 
 $projectRoot = Split-Path -Parent $PSScriptRoot
-$mainSourceRoot = Join-Path $projectRoot "src\main\java"
-$testSourceRoot = Join-Path $projectRoot "src\test\java"
-$mainOutput = Join-Path $projectRoot "out\main"
-$testOutput = Join-Path $projectRoot "out\test"
-$junitJar = Join-Path $projectRoot "lib\junit-platform-console-standalone-6.1.1.jar"
+$mainSourceRoot = [IO.Path]::Combine($projectRoot, "src", "main", "java")
+$testSourceRoot = [IO.Path]::Combine($projectRoot, "src", "test", "java")
+$mainOutput = [IO.Path]::Combine($projectRoot, "out", "main")
+$testOutput = [IO.Path]::Combine($projectRoot, "out", "test")
+$junitJar = [IO.Path]::Combine($projectRoot, "lib", "junit-platform-console-standalone-6.1.1.jar")
 
 function Get-JavaSources {
     param(
