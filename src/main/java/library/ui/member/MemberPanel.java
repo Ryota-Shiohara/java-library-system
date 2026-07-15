@@ -22,12 +22,15 @@ import library.exception.LibraryException;
 import library.model.Book;
 import library.model.Member;
 import library.service.LoanService;
+import library.service.LoanHistoryService;
 import library.service.MemberService;
+import library.ui.loan.LoanHistoryDialog;
 
 public final class MemberPanel extends JPanel {
     private static final Logger LOGGER = Logger.getLogger(MemberPanel.class.getName());
     private final MemberService memberService;
     private final LoanService loanService;
+    private final LoanHistoryService historyService;
     private final Runnable dataChanged;
     private final DefaultTableModel tableModel = new DefaultTableModel(
             new String[] {"ID", "Name", "Borrowed"}, 0) {
@@ -40,12 +43,17 @@ public final class MemberPanel extends JPanel {
     private final JTextField searchField = new JTextField(20);
     private String currentQuery = "";
 
-    public MemberPanel(MemberService memberService, LoanService loanService, Runnable dataChanged) {
-        if (memberService == null || loanService == null || dataChanged == null) {
+    public MemberPanel(
+            MemberService memberService,
+            LoanService loanService,
+            LoanHistoryService historyService,
+            Runnable dataChanged) {
+        if (memberService == null || loanService == null || historyService == null || dataChanged == null) {
             throw new IllegalArgumentException("Panel dependencies must not be null.");
         }
         this.memberService = memberService;
         this.loanService = loanService;
+        this.historyService = historyService;
         this.dataChanged = dataChanged;
         buildContent();
         refreshData();
@@ -84,6 +92,8 @@ public final class MemberPanel extends JPanel {
         clearButton.addActionListener(event -> clearSearch());
         JButton borrowedBooksButton = new JButton("Borrowed Books");
         borrowedBooksButton.addActionListener(event -> showBorrowedBooks());
+        JButton historyButton = new JButton("History");
+        historyButton.addActionListener(event -> showHistory());
 
         JPanel toolbar = new JPanel(new FlowLayout(FlowLayout.LEADING, 6, 0));
         toolbar.add(addButton);
@@ -94,6 +104,7 @@ public final class MemberPanel extends JPanel {
         toolbar.add(searchButton);
         toolbar.add(clearButton);
         toolbar.add(borrowedBooksButton);
+        toolbar.add(historyButton);
         return toolbar;
     }
 
@@ -188,6 +199,19 @@ public final class MemberPanel extends JPanel {
                     : books.stream().map(book -> book.id() + " - " + book.title()).reduce((left, right) -> left + "\n" + right)
                             .orElseThrow();
             JOptionPane.showMessageDialog(this, message, "Borrowed Books", JOptionPane.INFORMATION_MESSAGE);
+        } catch (LibraryException exception) {
+            showError(exception.getMessage());
+        } catch (Exception exception) {
+            handleUnexpectedError(exception);
+        }
+    }
+
+    private void showHistory() {
+        try {
+            Member selected = selectedMember();
+            if (selected == null) return;
+            LoanHistoryDialog dialog = new LoanHistoryDialog(owner(), historyService, selected.id());
+            dialog.setVisible(true);
         } catch (LibraryException exception) {
             showError(exception.getMessage());
         } catch (Exception exception) {

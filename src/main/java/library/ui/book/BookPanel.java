@@ -4,10 +4,12 @@ import java.awt.BorderLayout;
 import java.awt.FlowLayout;
 import java.awt.Window;
 import java.util.List;
+import java.util.Locale;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
+import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -20,43 +22,53 @@ import javax.swing.table.DefaultTableModel;
 import library.exception.LibraryException;
 import library.model.Book;
 import library.model.Member;
+import library.model.NdcCategory;
 import library.service.BookService;
+import library.service.LoanHistoryService;
 import library.service.LoanService;
 import library.service.dto.BookSummary;
+import library.service.dto.ClassificationSummary;
+import library.ui.loan.LoanHistoryDialog;
 
 public final class BookPanel extends JPanel {
     private static final Logger LOGGER = Logger.getLogger(BookPanel.class.getName());
     private final BookService bookService;
     private final LoanService loanService;
+    private final LoanHistoryService historyService;
     private final Runnable dataChanged;
     private final DefaultTableModel tableModel = new DefaultTableModel(
-            new String[] {"ID", "Title", "Genre", "Total", "Loaned", "Available"}, 0) {
+            new String[] {"ID", "Title", "Genre", "NDC", "Total", "Loaned", "Available"}, 0) {
         @Override
         public boolean isCellEditable(int row, int column) { return false; }
     };
     private final JTable table = new JTable(tableModel);
     private final JTextField searchField = new JTextField(20);
+    private final JComboBox<NdcFilter> ndcFilterBox = new JComboBox<>();
     private String currentQuery = "";
+    private String currentNdcCode = "";
 
-    public BookPanel(BookService bookService, LoanService loanService, Runnable dataChanged) {
-        if (bookService == null || loanService == null || dataChanged == null) {
+    public BookPanel(
+            BookService bookService,
+            LoanService loanService,
+            LoanHistoryService historyService,
+            Runnable dataChanged) {
+        if (bookService == null || loanService == null || historyService == null || dataChanged == null) {
             throw new IllegalArgumentException("Panel dependencies must not be null.");
         }
         this.bookService = bookService;
         this.loanService = loanService;
+        this.historyService = historyService;
         this.dataChanged = dataChanged;
         buildContent();
         refreshData();
     }
 
     public void refreshData() {
-        List<BookSummary> books = currentQuery.isEmpty()
-                ? bookService.listBooks()
-                : bookService.searchBooks(currentQuery);
+        List<BookSummary> books = bookService.searchBooks(currentQuery, currentNdcCode);
         tableModel.setRowCount(0);
         for (BookSummary book : books) {
             tableModel.addRow(new Object[] {
-                    book.id(), book.title(), book.genre(), book.totalCopies(),
+                    book.id(), book.title(), book.genre(), book.ndcCode(), book.totalCopies(),
                     book.loanedCopies(), book.availableCopies()
             });
         }
@@ -84,6 +96,19 @@ public final class BookPanel extends JPanel {
         clearButton.addActionListener(event -> clearSearch());
         JButton borrowersButton = new JButton("Borrowers");
         borrowersButton.addActionListener(event -> showBorrowers());
+        JButton historyButton = new JButton("History");
+        historyButton.addActionListener(event -> showHistory());
+        JButton statisticsButton = new JButton("Statistics");
+        statisticsButton.addActionListener(event -> showStatistics());
+        ndcFilterBox.addItem(new NdcFilter("", "All"));
+        for (NdcCategory category : NdcCategory.values()) {
+            ndcFilterBox.addItem(new NdcFilter(category.code(), category.toString()));
+        }
+        ndcFilterBox.addActionListener(event -> {
+            NdcFilter filter = (NdcFilter) ndcFilterBox.getSelectedItem();
+            currentNdcCode = filter == null ? "" : filter.code();
+            refreshData();
+        });
         JPanel toolbar = new JPanel(new FlowLayout(FlowLayout.LEADING, 6, 0));
         toolbar.add(addButton);
         toolbar.add(editButton);
@@ -93,6 +118,10 @@ public final class BookPanel extends JPanel {
         toolbar.add(searchButton);
         toolbar.add(clearButton);
         toolbar.add(borrowersButton);
+        toolbar.add(historyButton);
+        toolbar.add(new JLabel("NDC:"));
+        toolbar.add(ndcFilterBox);
+        toolbar.add(statisticsButton);
         return toolbar;
     }
 
@@ -101,7 +130,7 @@ public final class BookPanel extends JPanel {
             BookDialog dialog = new BookDialog(owner(), null);
             dialog.setVisible(true);
             if (!dialog.isConfirmed()) return;
-            bookService.addBook(dialog.bookId(), dialog.bookTitle(), dialog.bookGenre(), dialog.totalCopies());
+            bookService.addBook(dialog.bookId(), dialog.bookTitle(), dialog.bookGenre(), dialog.totalCopies(), dialog.ndcCode());
             dataChanged.run();
         } catch (LibraryException exception) {
             showError(exception.getMessage());
@@ -117,7 +146,7 @@ public final class BookPanel extends JPanel {
             BookDialog dialog = new BookDialog(owner(), selected);
             dialog.setVisible(true);
             if (!dialog.isConfirmed()) return;
-            bookService.updateBook(selected.id(), dialog.bookTitle(), dialog.bookGenre(), dialog.totalCopies());
+            bookService.updateBook(selected.id(), dialog.bookTitle(), dialog.bookGenre(), dialog.totalCopies(), dialog.ndcCode());
             dataChanged.run();
         } catch (LibraryException exception) {
             showError(exception.getMessage());
@@ -157,6 +186,8 @@ public final class BookPanel extends JPanel {
         try {
             currentQuery = "";
             searchField.setText("");
+            currentNdcCode = "";
+            ndcFilterBox.setSelectedIndex(0);
             refreshData();
         } catch (LibraryException exception) {
             showError(exception.getMessage());
@@ -175,6 +206,36 @@ public final class BookPanel extends JPanel {
                     : borrowers.stream().map(member -> member.id() + " - " + member.name())
                             .reduce((left, right) -> left + "\n" + right).orElseThrow();
             JOptionPane.showMessageDialog(this, message, "Borrowers", JOptionPane.INFORMATION_MESSAGE);
+        } catch (LibraryException exception) {
+            showError(exception.getMessage());
+        } catch (Exception exception) {
+            handleUnexpectedError(exception);
+        }
+    }
+
+    private void showStatistics() {
+        try {
+            StringBuilder message = new StringBuilder(
+                    "NDC | Category | Books | Total | Loaned | Available | History\n");
+            for (ClassificationSummary summary : bookService.listClassificationSummaries()) {
+                message.append(String.format(Locale.ROOT, "%s | %s | %d | %d | %d | %d | %d%n",
+                        summary.ndcCode(), summary.ndcName(), summary.bookCount(), summary.totalCopies(),
+                        summary.loanedCopies(), summary.availableCopies(), summary.historicalLoanCount()));
+            }
+            JOptionPane.showMessageDialog(this, message.toString(), "NDC Statistics", JOptionPane.INFORMATION_MESSAGE);
+        } catch (LibraryException exception) {
+            showError(exception.getMessage());
+        } catch (Exception exception) {
+            handleUnexpectedError(exception);
+        }
+    }
+
+    private void showHistory() {
+        try {
+            Book selected = selectedBook();
+            if (selected == null) return;
+            LoanHistoryDialog dialog = new LoanHistoryDialog(owner(), historyService, selected.id());
+            dialog.setVisible(true);
         } catch (LibraryException exception) {
             showError(exception.getMessage());
         } catch (Exception exception) {
@@ -202,5 +263,12 @@ public final class BookPanel extends JPanel {
     private void handleUnexpectedError(Exception exception) {
         LOGGER.log(Level.SEVERE, "Unexpected error in book panel.", exception);
         showError("An unexpected error occurred.");
+    }
+
+    private record NdcFilter(String code, String label) {
+        @Override
+        public String toString() {
+            return label;
+        }
     }
 }

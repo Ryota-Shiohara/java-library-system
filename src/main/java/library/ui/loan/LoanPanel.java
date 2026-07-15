@@ -16,6 +16,7 @@ import javax.swing.SwingUtilities;
 import javax.swing.table.DefaultTableModel;
 import library.exception.LibraryException;
 import library.service.BookService;
+import library.service.LoanHistoryService;
 import library.service.LoanService;
 import library.service.MemberService;
 import library.service.dto.LoanDetails;
@@ -25,6 +26,7 @@ public final class LoanPanel extends JPanel {
     private final BookService bookService;
     private final MemberService memberService;
     private final LoanService loanService;
+    private final LoanHistoryService historyService;
     private final Runnable dataChanged;
     private final DefaultTableModel tableModel = new DefaultTableModel(
             new String[] {"Loan ID", "Book", "Member", "Checkout Date", "Due Date", "Status"}, 0) {
@@ -39,13 +41,16 @@ public final class LoanPanel extends JPanel {
             BookService bookService,
             MemberService memberService,
             LoanService loanService,
+            LoanHistoryService historyService,
             Runnable dataChanged) {
-        if (bookService == null || memberService == null || loanService == null || dataChanged == null) {
+        if (bookService == null || memberService == null || loanService == null
+                || historyService == null || dataChanged == null) {
             throw new IllegalArgumentException("Panel dependencies must not be null.");
         }
         this.bookService = bookService;
         this.memberService = memberService;
         this.loanService = loanService;
+        this.historyService = historyService;
         this.dataChanged = dataChanged;
         buildContent();
         refreshData();
@@ -76,8 +81,11 @@ public final class LoanPanel extends JPanel {
         checkoutButton.addActionListener(event -> checkout());
         JButton returnButton = new JButton("Return");
         returnButton.addActionListener(event -> returnLoan());
+        JButton historyButton = new JButton("History");
+        historyButton.addActionListener(event -> showHistory());
         toolbar.add(checkoutButton);
         toolbar.add(returnButton);
+        toolbar.add(historyButton);
         add(toolbar, BorderLayout.NORTH);
     }
 
@@ -125,6 +133,17 @@ public final class LoanPanel extends JPanel {
         }
         int modelRow = table.convertRowIndexToModel(viewRow);
         return (String) tableModel.getValueAt(modelRow, 0);
+    }
+
+    private void showHistory() {
+        try {
+            LoanHistoryDialog dialog = new LoanHistoryDialog(owner(), historyService);
+            dialog.setVisible(true);
+        } catch (LibraryException exception) {
+            showError(exception.getMessage());
+        } catch (Exception exception) {
+            handleUnexpectedError(exception);
+        }
     }
 
     private Window owner() {
