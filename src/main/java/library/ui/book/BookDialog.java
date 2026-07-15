@@ -9,18 +9,21 @@ import java.awt.Insets;
 import java.awt.Window;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
+import javax.swing.JComboBox;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 import library.exception.ValidationException;
 import library.model.Book;
+import library.model.NdcCategory;
 
 public final class BookDialog extends JDialog {
     private final JTextField idField = new JTextField(24);
     private final JTextField titleField = new JTextField(24);
     private final JTextField genreField = new JTextField(24);
     private final JTextField totalCopiesField = new JTextField(8);
+    private final JComboBox<NdcCategory> ndcBox = new JComboBox<>(NdcCategory.values());
     private boolean confirmed;
 
     public BookDialog(Window owner, Book book) {
@@ -35,6 +38,10 @@ public final class BookDialog extends JDialog {
     public String bookId() { return idField.getText(); }
     public String bookTitle() { return titleField.getText(); }
     public String bookGenre() { return genreField.getText(); }
+    public String ndcCode() {
+        NdcCategory category = (NdcCategory) ndcBox.getSelectedItem();
+        return category == null ? null : category.code();
+    }
 
     public int totalCopies() {
         try {
@@ -53,13 +60,15 @@ public final class BookDialog extends JDialog {
         addField(fields, constraints, 0, "ID:", idField);
         addField(fields, constraints, 1, "Title:", titleField);
         addField(fields, constraints, 2, "Genre:", genreField);
-        addField(fields, constraints, 3, "Total copies:", totalCopiesField);
+        addField(fields, constraints, 3, "NDC:", ndcBox);
+        addField(fields, constraints, 4, "Total copies:", totalCopiesField);
         if (book != null) {
             idField.setText(book.id());
             idField.setEditable(false);
             titleField.setText(book.title());
             genreField.setText(book.genre());
             totalCopiesField.setText(Integer.toString(book.totalCopies()));
+            ndcBox.setSelectedItem(book.ndcCategory());
         }
         JButton saveButton = new JButton("Save");
         saveButton.addActionListener(event -> { confirmed = true; dispose(); });
@@ -74,7 +83,7 @@ public final class BookDialog extends JDialog {
         getRootPane().setDefaultButton(saveButton);
     }
 
-    private void addField(JPanel fields, GridBagConstraints constraints, int row, String label, JTextField field) {
+    private void addField(JPanel fields, GridBagConstraints constraints, int row, String label, java.awt.Component field) {
         constraints.gridx = 0;
         constraints.gridy = row;
         constraints.fill = GridBagConstraints.NONE;

@@ -16,6 +16,7 @@ import library.repository.LoanRepository;
 import library.repository.MemberRepository;
 import library.service.BookService;
 import library.service.LibraryDataValidator;
+import library.service.LoanHistoryService;
 import library.service.LoanService;
 import library.service.MemberService;
 import library.ui.MainFrame;
@@ -37,10 +38,11 @@ public final class Main {
             LoanRepository loanRepository = new FileLoanRepository(dataStore);
             LibraryDataValidator.validate(bookRepository, memberRepository, loanRepository);
 
-            BookService bookService = new BookService(bookRepository, loanRepository);
+            BookService bookService = new BookService(bookRepository, loanRepository, loanRepository);
             MemberService memberService = new MemberService(memberRepository, loanRepository);
             LoanService loanService = new LoanService(bookRepository, memberRepository, loanRepository);
-            MainFrame frame = new MainFrame(bookService, memberService, loanService);
+            LoanHistoryService historyService = new LoanHistoryService(loanRepository);
+            MainFrame frame = new MainFrame(bookService, memberService, loanService, historyService);
             frame.setVisible(true);
         } catch (LibraryException exception) {
             showStartupError(exception.getMessage());

@@ -54,9 +54,13 @@ public final class FileBookRepository implements BookRepository {
     private Map<String, Book> loadBooks(List<List<String>> records) {
         Map<String, Book> loaded = new LinkedHashMap<>();
         for (List<String> record : records) {
-            if (record.size() != 4) throw new DataStoreException("Book record must contain 4 fields.");
+            if (record.size() != 4 && record.size() != 5) {
+                throw new DataStoreException("Book record must contain 4 or 5 fields.");
+            }
             try {
-                Book book = new Book(record.get(0), record.get(1), record.get(2), Integer.parseInt(record.get(3)));
+                Book book = record.size() == 4
+                        ? new Book(record.get(0), record.get(1), record.get(2), Integer.parseInt(record.get(3)))
+                        : new Book(record.get(0), record.get(1), record.get(2), Integer.parseInt(record.get(3)), record.get(4));
                 if (loaded.putIfAbsent(book.id(), book) != null) throw new DataStoreException("Duplicate book ID: " + book.id() + ".");
             } catch (NumberFormatException exception) {
                 throw new DataStoreException("Book total copies must be an integer.", exception);
@@ -68,7 +72,7 @@ public final class FileBookRepository implements BookRepository {
     private void persist(Map<String, Book> candidate) {
         List<List<String>> records = new ArrayList<>();
         candidate.values().stream().sorted(Comparator.comparing(Book::id)).forEach(book ->
-                records.add(List.of(book.id(), book.title(), book.genre(), Integer.toString(book.totalCopies()))));
+                records.add(List.of(book.id(), book.title(), book.genre(), Integer.toString(book.totalCopies()), book.ndcCode())));
         dataStore.write("books", records);
     }
 

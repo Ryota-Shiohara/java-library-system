@@ -45,6 +45,11 @@ class CirculationPersistenceTest {
         assertEquals(1, restoredLoanService.findBorrowedBooksByMember("M1").size());
         restoredLoanService.returnLoan("loan-1");
         assertTrue(restoredLoans.findAll().isEmpty());
+        assertEquals(1, restoredLoans.findAllHistory().size());
+        assertEquals("B1", restoredLoans.findAllHistory().get(0).book().id());
+
+        FileLoanRepository restoredHistoryRepository = new FileLoanRepository(new FileDataStore(dataDirectory));
+        assertEquals(1, restoredHistoryRepository.findAllHistory().size());
     }
 
     private Clock fixedClock() {

@@ -4,6 +4,7 @@ import java.awt.BorderLayout;
 import javax.swing.JFrame;
 import javax.swing.JTabbedPane;
 import library.service.BookService;
+import library.service.LoanHistoryService;
 import library.service.LoanService;
 import library.service.MemberService;
 import library.ui.book.BookPanel;
@@ -15,8 +16,12 @@ public final class MainFrame extends JFrame {
     private final MemberPanel memberPanel;
     private final LoanPanel loanPanel;
 
-    public MainFrame(BookService bookService, MemberService memberService, LoanService loanService) {
-        if (bookService == null || memberService == null || loanService == null) {
+    public MainFrame(
+            BookService bookService,
+            MemberService memberService,
+            LoanService loanService,
+            LoanHistoryService historyService) {
+        if (bookService == null || memberService == null || loanService == null || historyService == null) {
             throw new IllegalArgumentException("Frame dependencies must not be null.");
         }
         setTitle("Library System");
@@ -25,9 +30,9 @@ public final class MainFrame extends JFrame {
         setLocationByPlatform(true);
 
         Runnable dataChanged = this::refreshAll;
-        bookPanel = new BookPanel(bookService, loanService, dataChanged);
-        memberPanel = new MemberPanel(memberService, loanService, dataChanged);
-        loanPanel = new LoanPanel(bookService, memberService, loanService, dataChanged);
+        bookPanel = new BookPanel(bookService, loanService, historyService, dataChanged);
+        memberPanel = new MemberPanel(memberService, loanService, historyService, dataChanged);
+        loanPanel = new LoanPanel(bookService, memberService, loanService, historyService, dataChanged);
 
         JTabbedPane tabs = new JTabbedPane();
         tabs.addTab("Books", bookPanel);

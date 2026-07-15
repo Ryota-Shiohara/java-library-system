@@ -13,6 +13,7 @@
 - GUIからモデルやファイルを直接変更せず、`UI -> Service -> Repository -> DataStore`の順に呼び出す。
 - モデルは変更不能な値として扱い、更新時は新しい値を作成する。
 - RepositoryとServiceが返す一覧は、呼び出し側から変更できないようにする。
+- 追加機能も既存の必須機能の公開API、状態不変条件、保存失敗時の動作を壊さない。
 - 実装コード、コメント、Javadoc、テスト、UI、例外メッセージ、ログには日本語を含めない。
 - README、`docs/`内の文書、提出レポートでは日本語を使用できる。
 - 利用者が入力するタイトルや氏名には、英語以外を含む任意のUnicode文字を保存できる。
@@ -77,6 +78,14 @@ ui -> service -> repository -> model
 - 検索は`Locale.ROOT`を用いた大文字・小文字を区別しない部分一致とする。
 - 空の検索語は全件を返す。
 
+### 4.4 NDC分類コード
+
+- 本はNDCの第1次区分を`String ndcCode`として保持する。
+- 使用できる分類コードは`0`から`9`までの1文字とする。
+- 分類名は実装コードとGUIでは英語で固定し、`0 General works`から`9 Literature`までを表示する。
+- `genre`は自由入力の表示用項目として残し、NDC分類とは別に扱う。
+- 空白を除去してから分類コードを検証する。不正な分類コードは`ValidationException`とする。
+
 ## 5. ドメインモデル
 
 モデルはJavaの`record`で実装する。コンストラクタで単項目の妥当性を検証し、複数モデルにまたがる制約はServiceで検証する。
@@ -88,12 +97,15 @@ public record Book(
         String id,
         String title,
         String genre,
-        int totalCopies) {
+        int totalCopies,
+        String ndcCode) {
 }
 ```
 
 - `id`、`title`、`genre`は空にできない。
 - `totalCopies`は1以上とする。
+- `ndcCode`は`0`から`9`までのいずれかとする。
+- 既存の4項目の本データは`ndcCode`が`0`のデータとして読み込み、次回保存時に5項目へ更新する。
 - 貸出中冊数は`Book`に保存せず、アクティブな`Loan`から算出する。
 - 利用可能冊数は`totalCopies - loanedCopies`とする。
 - 同じタイトルを持つ別の本IDは登録できる。
@@ -126,7 +138,26 @@ public record Loan(
 - `dueDate`は`checkoutDate.plusDays(14)`とする。
 - 保存するのは現在貸出中の`Loan`だけとする。
 - 返却時は対象の`Loan`を削除する。
-- 貸出履歴は今回の必須実装に含めない。
+
+### 5.4 LoanHistory
+
+```java
+public record LoanHistory(
+        String id,
+        Book book,
+        Member member,
+        LocalDate checkoutDate,
+        LocalDate dueDate,
+        LocalDate returnDate) {
+}
+```
+
+- `LoanHistory`は返却時点の本と会員のスナップショットを保持する。
+- `id`、`book`、`member`、各日付は`null`にできない。
+- `dueDate`は`checkoutDate.plusDays(14)`とする。
+- `returnDate`は`checkoutDate`より前にできない。
+- `returnDate.isAfter(dueDate)`の場合を履歴上の延滞とする。
+- 貸出IDはアクティブ貸出と履歴を通して重複できない。
 
 ## 6. 業務ルール
 
@@ -162,7 +193,8 @@ public record Loan(
 
 - 返却対象は貸出IDで指定する。
 - 対象のアクティブな貸出が存在する場合だけ返却できる。
-- 返却成功後はアクティブな貸出一覧から削除する。
+- 返却成功後は対象の`Loan`を`LoanHistory`へ移し、アクティブな貸出一覧から削除する。
+- 履歴には返却日を保存する。
 - 存在しない貸出IDや返却済み貸出IDの再返却は拒否する。
 
 ### 6.5 期限と延滞
@@ -188,11 +220,15 @@ public record Loan(
 ```java
 public final class BookService {
     public Book addBook(String id, String title, String genre, int totalCopies);
+    public Book addBook(String id, String title, String genre, int totalCopies, String ndcCode);
     public Book updateBook(String id, String title, String genre, int totalCopies);
+    public Book updateBook(String id, String title, String genre, int totalCopies, String ndcCode);
     public void deleteBook(String id);
     public Optional<Book> findBookById(String id);
     public List<BookSummary> listBooks();
     public List<BookSummary> searchBooks(String query);
+    public List<BookSummary> searchBooks(String query, String ndcCode);
+    public List<ClassificationSummary> listClassificationSummaries();
     public int availableCopies(String bookId);
 }
 ```
@@ -206,7 +242,23 @@ public record BookSummary(
         String genre,
         int totalCopies,
         int loanedCopies,
-        int availableCopies) {
+        int availableCopies,
+        String ndcCode,
+        String ndcName) {
+}
+```
+
+`ClassificationSummary`は分類別の変更不能な集計値とする。
+
+```java
+public record ClassificationSummary(
+        String ndcCode,
+        String ndcName,
+        int bookCount,
+        int totalCopies,
+        int loanedCopies,
+        int availableCopies,
+        int historicalLoanCount) {
 }
 ```
 
@@ -257,11 +309,27 @@ public record LoanDetails(
 
 貸出一覧は貸出日の昇順、同日の場合は貸出IDの昇順で返す。
 
-### 7.4 Serviceの依存関係
+### 7.4 LoanHistoryService
 
-- `BookService`は`BookRepository`と`LoanQuery`に依存する。
+```java
+public final class LoanHistoryService {
+    public List<LoanHistory> listHistory();
+    public List<LoanHistory> searchHistory(
+            String query,
+            String ndcCode,
+            LocalDate fromDate,
+            LocalDate toDate);
+}
+```
+
+履歴検索は貸出ID、本ID、本タイトル、ジャンル、会員ID、会員名、NDCコード、NDC名を対象とする。`fromDate`と`toDate`は返却日の範囲として扱い、`null`は範囲指定なしとする。
+
+### 7.5 Serviceの依存関係
+
+- `BookService`は`BookRepository`、`LoanQuery`、`LoanHistoryRepository`に依存する。
 - `MemberService`は`MemberRepository`と`LoanQuery`に依存する。
 - `LoanService`は`BookRepository`、`MemberRepository`、`LoanRepository`、`Clock`、貸出ID用`Supplier<String>`に依存する。
+- `LoanHistoryService`は`LoanHistoryRepository`に依存する。
 - 本番用の`LoanService`は、システムの`Clock`とUUID生成処理を使うコンストラクタを提供する。
 - テスト用のコンストラクタでは、`Clock`と`Supplier<String>`を明示的に注入できるようにする。
 
@@ -274,7 +342,7 @@ public interface LoanQuery {
 }
 ```
 
-### 7.5 検索結果と失敗時の動作
+### 7.6 検索結果と失敗時の動作
 
 - `findBookById`、`findMemberById`、`findActiveLoanById`は、対象が存在しない場合に`Optional.empty()`を返す。
 - `list`と`search`で始まるメソッドは、該当データがない場合に空の変更不能な一覧を返す。`null`は返さない。
@@ -315,7 +383,7 @@ public interface MemberRepository {
 ### 8.3 LoanRepository
 
 ```java
-public interface LoanRepository extends LoanQuery {
+public interface LoanRepository extends LoanQuery, LoanHistoryRepository {
     List<Loan> findAll();
     Optional<Loan> findById(String id);
     List<Loan> findByBookId(String bookId);
@@ -323,6 +391,17 @@ public interface LoanRepository extends LoanQuery {
     boolean existsByBookIdAndMemberId(String bookId, String memberId);
     void save(Loan loan);
     void deleteById(String id);
+    void completeReturn(String loanId, LoanHistory history);
+}
+```
+
+`LoanHistoryRepository`は次の契約とする。
+
+```java
+public interface LoanHistoryRepository {
+    List<LoanHistory> findAllHistory();
+    List<LoanHistory> findHistoryByBookId(String bookId);
+    List<LoanHistory> findHistoryByMemberId(String memberId);
 }
 ```
 
@@ -351,7 +430,7 @@ public interface DataStore {
 }
 ```
 
-- コレクション名は`books`、`members`、`loans`だけを許可する。
+- コレクション名は`books`、`members`、`loans`だけを許可する。貸出履歴は`loans`へ保存する。
 - `FileDataStore`のコンストラクタで保存ディレクトリの`Path`を受け取る。
 - `read`は復号済みのフィールド一覧を返す。
 - `read`が返す外側と内側の一覧は変更不能とする。
@@ -379,7 +458,9 @@ public interface DataStore {
 3. ファイルシステムが`ATOMIC_MOVE`をサポートしない場合は、`REPLACE_EXISTING`で置換する。
 4. 置換に失敗した場合は`DataStoreException`を送出し、メモリ上の状態を変更しない。
 
-本の追加・修正・削除は本ファイルだけ、会員の追加・修正・削除は会員ファイルだけ、貸出・返却は貸出ファイルだけを変更する。貸出中冊数を保存せず貸出データから算出するため、1回の業務操作で複数ファイルを更新しない。
+本の追加・修正・削除は本ファイルだけ、会員の追加・修正・削除は会員ファイルだけ、貸出・返却・履歴移行は貸出ファイルだけを変更する。貸出中冊数を保存せず貸出データから算出するため、1回の業務操作で複数ファイルを更新しない。
+
+`loans.data`では、既存の5項目レコードをアクティブ貸出として読み込める。新しいアクティブ貸出は`ACTIVE`マーカー付きの6項目レコード、返却済み貸出は`HISTORY`マーカー付きの12項目レコードとして保存する。返却時はアクティブ貸出の削除と履歴の追加を含む全レコードを1回の`DataStore.write("loans", ...)`で置き換える。
 
 読込時の規則は次のとおりとする。
 
@@ -402,7 +483,7 @@ LibraryException
 └─ DataStoreException
 ```
 
-- `ValidationException`: 空文字、不正なID、不正な冊数など。
+- `ValidationException`: 空文字、不正なID、不正な冊数、不正なNDC分類など。
 - `DuplicateIdException`: 本ID、会員ID、貸出IDの重複。
 - `EntityNotFoundException`: 指定した本、会員、貸出が存在しない。
 - `OperationNotAllowedException`: 貸出中の削除、在庫不足、重複貸出、貸出中冊数未満への変更など。
@@ -423,22 +504,24 @@ LibraryException
 
 ### 11.2 Booksタブ
 
-- 列は`ID`、`Title`、`Genre`、`Total`、`Loaned`、`Available`とする。
-- 操作は`Add`、`Edit`、`Delete`、`Search`、`Clear`、`Borrowers`とする。
+- 列は`ID`、`Title`、`Genre`、`NDC`、`Total`、`Loaned`、`Available`とする。
+- 操作は`Add`、`Edit`、`Delete`、`Search`、`Clear`、`Borrowers`、`History`、`Statistics`とする。
+- NDC分類による絞り込みを行える。
 - `Edit`ではIDを変更できない。
 - `Borrowers`では選択した本を現在借りている会員を表示する。
 
 ### 11.3 Membersタブ
 
 - 列は`ID`、`Name`、`Borrowed`とする。
-- 操作は`Add`、`Edit`、`Delete`、`Search`、`Clear`、`Borrowed Books`とする。
+- 操作は`Add`、`Edit`、`Delete`、`Search`、`Clear`、`Borrowed Books`、`History`とする。
 - `Edit`ではIDを変更できない。
 - `Borrowed Books`では選択した会員が現在借りている本を表示する。
 
 ### 11.4 Loansタブ
 
 - 列は`Loan ID`、`Book`、`Member`、`Checkout Date`、`Due Date`、`Status`とする。
-- 操作は`Checkout`と`Return`とする。
+- 操作は`Checkout`、`Return`、`History`とする。
+- `History`では返却済み貸出を本、会員、期間、NDC分類で検索・絞り込みできる。
 - `Status`は`On time`または`Overdue`と表示する。
 - `Checkout`では本と会員を一覧から選択する。
 - 貸出ダイアログには利用可能冊数が1冊以上ある本だけを表示する。
@@ -459,22 +542,26 @@ public void refreshData();
 public MainFrame(
         BookService bookService,
         MemberService memberService,
-        LoanService loanService);
+        LoanService loanService,
+        LoanHistoryService loanHistoryService);
 
 public BookPanel(
         BookService bookService,
         LoanService loanService,
+        LoanHistoryService loanHistoryService,
         Runnable dataChanged);
 
 public MemberPanel(
         MemberService memberService,
         LoanService loanService,
+        LoanHistoryService loanHistoryService,
         Runnable dataChanged);
 
 public LoanPanel(
         BookService bookService,
         MemberService memberService,
         LoanService loanService,
+        LoanHistoryService loanHistoryService,
         Runnable dataChanged);
 ```
 
@@ -489,7 +576,7 @@ public LoanPanel(
 1. 保存先`Path`と`FileDataStore`。
 2. `BookRepository`、`MemberRepository`、`LoanRepository`。
 3. `LibraryDataValidator`による貸出データの参照整合性検証。
-4. `BookService`、`MemberService`、`LoanService`。
+4. `BookService`、`MemberService`、`LoanService`、`LoanHistoryService`。
 5. `MainFrame`と各パネル。
 
 読込または参照整合性検証に失敗した場合、空データで起動せず、英語のエラーダイアログを表示して終了する。
@@ -511,11 +598,12 @@ public final class LibraryDataValidator {
 
 ### ryota
 
-- `Book`、`BookService`、`BookSummary`。
+- `Book`、`BookService`、`BookSummary`、`NdcCategory`、`ClassificationSummary`。
+- `LoanHistory`、`LoanHistoryService`、貸出履歴のRepository契約。
 - `BookRepository`と本データのRepository実装。
 - `DataStore`、`FileDataStore`、`LoanQuery`、例外階層、共通ファイルI/O。
 - `Main`、`MainFrame`、`BookPanel`、`BookDialog`。
-- 本、在庫、本データ永続化のJUnitテスト。
+- 本、在庫、NDC分類、分類集計、本データ永続化、貸出履歴のJUnitテスト。
 
 ### kumpei
 
@@ -528,6 +616,7 @@ public final class LibraryDataValidator {
 ### 共有変更
 
 - 公開Service API、Repository API、例外階層、保存形式、GUIのパネル連携は共有契約とする。
+- NDC分類と貸出履歴の公開API、`loans.data`のレコード形式、返却時の履歴移行は共有契約とする。
 - 同じファイルを同時に編集しない。
 - 他担当の公開APIに変更が必要な場合は、実装前に理由と変更内容を共有する。
 - `MainFrame`へのMembers・Loansタブの組込みは、kumpeiのパネルAPI確定後にryotaが行う。
@@ -548,6 +637,9 @@ public final class LibraryDataValidator {
 - 本・会員のCRUD、貸出・返却、双方向の照会をGUIから実行できる。
 - 所有冊数、貸出中冊数、利用可能冊数が常に一致する。
 - 再起動後も本、会員、貸出が復元される。
+- NDC分類の登録・表示・検索・集計をGUIから実行できる。
+- 返却済み貸出の履歴を検索・絞り込みでき、再起動後も復元される。
+- NDC分類別の蔵書数、在庫数、貸出履歴件数が一致する。
 - 在庫不足、重複貸出、貸出中の削除、不正入力を拒否する。
 - 保存失敗や検証失敗の後に状態が変化していない。
 - 全JUnitテストが成功する。

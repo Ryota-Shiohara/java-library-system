@@ -8,6 +8,7 @@ import java.util.Optional;
 import library.exception.DataStoreException;
 import library.model.Book;
 import library.model.Loan;
+import library.model.LoanHistory;
 import library.model.Member;
 import library.repository.BookRepository;
 import library.repository.LoanRepository;
@@ -141,6 +142,26 @@ class LibraryDataValidatorTest {
 
         @Override
         public void deleteById(String id) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public List<LoanHistory> findAllHistory() {
+            return List.of();
+        }
+
+        @Override
+        public List<LoanHistory> findHistoryByBookId(String bookId) {
+            return List.of();
+        }
+
+        @Override
+        public List<LoanHistory> findHistoryByMemberId(String memberId) {
+            return List.of();
+        }
+
+        @Override
+        public void completeReturn(String loanId, LoanHistory history) {
             throw new UnsupportedOperationException();
         }
     }

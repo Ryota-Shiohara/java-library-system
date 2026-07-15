@@ -13,6 +13,7 @@ import library.exception.OperationNotAllowedException;
 import library.exception.ValidationException;
 import library.model.Book;
 import library.model.Loan;
+import library.model.LoanHistory;
 import library.model.Member;
 import library.repository.BookRepository;
 import library.repository.LoanRepository;
@@ -86,10 +87,18 @@ public final class LoanService {
 
     public void returnLoan(String loanId) {
         String normalizedLoanId = InputRules.normalizeDisplayText(loanId, "Loan ID");
-        if (loanRepository.findById(normalizedLoanId).isEmpty()) {
-            throw new EntityNotFoundException("Loan not found: " + normalizedLoanId + ".");
-        }
-        loanRepository.deleteById(normalizedLoanId);
+        Loan loan = loanRepository.findById(normalizedLoanId)
+                .orElseThrow(() -> new EntityNotFoundException("Loan not found: " + normalizedLoanId + "."));
+        Book book = requireBook(loan.bookId());
+        Member member = requireMember(loan.memberId());
+        LoanHistory history = new LoanHistory(
+                loan.id(),
+                book,
+                member,
+                loan.checkoutDate(),
+                loan.dueDate(),
+                LocalDate.now(clock));
+        loanRepository.completeReturn(normalizedLoanId, history);
     }
 
     public Optional<LoanDetails> findActiveLoanById(String loanId) {
