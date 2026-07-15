@@ -9,7 +9,10 @@ import java.util.Optional;
 import library.exception.DuplicateIdException;
 import library.exception.OperationNotAllowedException;
 import library.model.Book;
+import library.model.LoanHistory;
+import library.model.Member;
 import library.repository.BookRepository;
+import library.repository.LoanHistoryRepository;
 import library.repository.LoanQuery;
 import org.junit.jupiter.api.Test;
 
@@ -34,6 +37,44 @@ class BookServiceTest {
         assertEquals(2, service.findBookById("b1").orElseThrow().totalCopies());
     }
 
+    @Test
+    void filtersBooksAndSummarizesCopiesByNdcCategory() {
+        InMemoryBookRepository repository = new InMemoryBookRepository();
+        BookService service = new BookService(repository, new StubLoanQuery(0));
+        service.addBook("B1", "Algorithms", "Science", 3, "4");
+        service.addBook("B2", "Poems", "Literature", 2, "9");
+
+        assertEquals(List.of("B1"), service.searchBooks("", "4").stream()
+                .map(summary -> summary.id()).toList());
+        assertEquals(1, service.listClassificationSummaries().stream()
+                .filter(summary -> summary.ndcCode().equals("4"))
+                .findFirst().orElseThrow().bookCount());
+        assertEquals(3, service.listClassificationSummaries().stream()
+                .filter(summary -> summary.ndcCode().equals("4"))
+                .findFirst().orElseThrow().totalCopies());
+    }
+
+    @Test
+    void includesHistoricalLoansInNdcSummary() {
+        InMemoryBookRepository repository = new InMemoryBookRepository();
+        repository.save(new Book("B1", "Algorithms", "Science", 1, "4"));
+        LoanHistory history = new LoanHistory(
+                "loan-1",
+                new Book("B1", "Algorithms", "Science", 1, "4"),
+                new Member("M1", "Ada"),
+                java.time.LocalDate.of(2026, 7, 1),
+                java.time.LocalDate.of(2026, 7, 15),
+                java.time.LocalDate.of(2026, 7, 10));
+        BookService service = new BookService(
+                repository,
+                new StubLoanQuery(0),
+                new FixedHistoryRepository(List.of(history)));
+
+        assertEquals(1, service.listClassificationSummaries().stream()
+                .filter(summary -> summary.ndcCode().equals("4"))
+                .findFirst().orElseThrow().historicalLoanCount());
+    }
+
     private static final class StubLoanQuery implements LoanQuery {
         private final int count;
         private StubLoanQuery(int count) { this.count = count; }
@@ -52,5 +93,17 @@ class BookServiceTest {
             books.add(book);
         }
         @Override public void deleteById(String id) { books.removeIf(book -> book.id().equals(id)); }
+    }
+
+    private static final class FixedHistoryRepository implements LoanHistoryRepository {
+        private final List<LoanHistory> histories;
+
+        private FixedHistoryRepository(List<LoanHistory> histories) {
+            this.histories = List.copyOf(histories);
+        }
+
+        @Override public List<LoanHistory> findAllHistory() { return histories; }
+        @Override public List<LoanHistory> findHistoryByBookId(String bookId) { return histories; }
+        @Override public List<LoanHistory> findHistoryByMemberId(String memberId) { return histories; }
     }
 }
