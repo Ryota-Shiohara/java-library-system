@@ -18,6 +18,7 @@ import library.exception.EntityNotFoundException;
 import library.exception.OperationNotAllowedException;
 import library.model.Book;
 import library.model.Loan;
+import library.model.LoanHistory;
 import library.model.Member;
 import library.repository.BookRepository;
 import library.repository.LoanRepository;
@@ -168,6 +169,7 @@ class LoanServiceTest {
 
     private static final class InMemoryLoanRepository implements LoanRepository {
         private final List<Loan> loans = new ArrayList<>();
+        private final List<LoanHistory> histories = new ArrayList<>();
 
         @Override
         public List<Loan> findAll() {
@@ -214,6 +216,31 @@ class LoanServiceTest {
         @Override
         public void deleteById(String id) {
             loans.removeIf(loan -> loan.id().equals(id.strip()));
+        }
+
+        @Override
+        public List<LoanHistory> findAllHistory() {
+            return List.copyOf(histories);
+        }
+
+        @Override
+        public List<LoanHistory> findHistoryByBookId(String bookId) {
+            return histories.stream()
+                    .filter(history -> history.book().id().equals(bookId.strip().toUpperCase()))
+                    .toList();
+        }
+
+        @Override
+        public List<LoanHistory> findHistoryByMemberId(String memberId) {
+            return histories.stream()
+                    .filter(history -> history.member().id().equals(memberId.strip().toUpperCase()))
+                    .toList();
+        }
+
+        @Override
+        public void completeReturn(String loanId, LoanHistory history) {
+            loans.removeIf(loan -> loan.id().equals(loanId.strip()));
+            histories.add(history);
         }
     }
 }
