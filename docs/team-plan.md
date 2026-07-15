@@ -22,7 +22,7 @@
 ```text
 src/main/java/library/
 ├─ Main.java
-├─ model/          Book, Member, Loan
+├─ model/          Book, Member, Loan, LoanHistory, NdcCategory
 ├─ repository/     ファイル保存・読込
 ├─ service/        本管理、会員管理、貸出返却の業務ルール
 └─ ui/             Swing画面、ダイアログ、テーブルモデル
