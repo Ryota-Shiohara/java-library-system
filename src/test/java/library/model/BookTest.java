@@ -17,6 +17,7 @@ class BookTest {
 
     @Test
     void rejectsBlankRequiredValues() {
+        assertThrows(ValidationException.class, () -> new Book(" ", "Title", "Genre", 1));
         assertThrows(ValidationException.class, () -> new Book("B1", " ", "Genre", 1));
         assertThrows(ValidationException.class, () -> new Book("B1", "Title", "\n", 1));
     }

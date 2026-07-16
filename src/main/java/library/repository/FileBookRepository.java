@@ -64,6 +64,8 @@ public final class FileBookRepository implements BookRepository {
                 if (loaded.putIfAbsent(book.id(), book) != null) throw new DataStoreException("Duplicate book ID: " + book.id() + ".");
             } catch (NumberFormatException exception) {
                 throw new DataStoreException("Book total copies must be an integer.", exception);
+            } catch (ValidationException exception) {
+                throw new DataStoreException("Invalid book record.", exception);
             }
         }
         return loaded;

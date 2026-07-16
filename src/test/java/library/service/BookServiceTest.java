@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import library.exception.DuplicateIdException;
+import library.exception.EntityNotFoundException;
 import library.exception.OperationNotAllowedException;
 import library.model.Book;
 import library.model.LoanHistory;
@@ -35,6 +36,33 @@ class BookServiceTest {
         assertThrows(DuplicateIdException.class, () -> service.addBook(" b1 ", "Other", "Genre", 1));
         assertThrows(OperationNotAllowedException.class, () -> service.updateBook("B1", "Title", "Genre", 1));
         assertEquals(2, service.findBookById("b1").orElseThrow().totalCopies());
+    }
+
+    @Test
+    void updatesDeletesAndCalculatesAvailableCopies() {
+        InMemoryBookRepository repository = new InMemoryBookRepository();
+        BookService service = new BookService(repository, new StubLoanQuery(1));
+        service.addBook("B1", "Original", "Genre", 3);
+
+        assertEquals(2, service.availableCopies("b1"));
+        assertEquals("Updated", service.updateBook("B1", "Updated", "Reference", 2).title());
+
+        BookService serviceWithoutLoans = new BookService(repository, new StubLoanQuery(0));
+        serviceWithoutLoans.deleteBook("B1");
+        assertEquals(List.of(), serviceWithoutLoans.listBooks());
+    }
+
+    @Test
+    void rejectsDeletionWithActiveLoansAndUnknownBookOperations() {
+        InMemoryBookRepository repository = new InMemoryBookRepository();
+        BookService service = new BookService(repository, new StubLoanQuery(1));
+        service.addBook("B1", "Title", "Genre", 1);
+
+        assertThrows(OperationNotAllowedException.class, () -> service.deleteBook("B1"));
+        assertThrows(EntityNotFoundException.class, () -> service.updateBook("B2", "Title", "Genre", 1));
+        assertThrows(EntityNotFoundException.class, () -> service.deleteBook("B2"));
+        assertThrows(EntityNotFoundException.class, () -> service.availableCopies("B2"));
+        assertEquals(List.of("B1"), service.listBooks().stream().map(summary -> summary.id()).toList());
     }
 
     @Test
