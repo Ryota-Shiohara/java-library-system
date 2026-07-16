@@ -49,8 +49,8 @@ public final class CheckoutDialog extends JDialog {
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         populateOptions(bookService, memberService);
         buildContent();
-        setMinimumSize(new Dimension(760, 500));
-        setSize(900, 560);
+        setMinimumSize(new Dimension(800, 520));
+        setSize(920, 580);
         setLocationRelativeTo(owner);
         UiStyles.bindEscape(this);
         UiStyles.requestInitialFocus(bookSearchField);
@@ -94,13 +94,13 @@ public final class CheckoutDialog extends JDialog {
         UiStyles.configureTextField(memberSearchField);
         JPanel content = new JPanel(new BorderLayout(0, 14));
         content.setBackground(UiStyles.PAGE_BACKGROUND);
-        content.setBorder(BorderFactory.createEmptyBorder(18, 18, 14, 18));
+        content.setBorder(BorderFactory.createEmptyBorder(22, 24, 18, 24));
 
         JPanel header = new JPanel(new BorderLayout(0, 4));
         header.setOpaque(false);
         header.add(UiStyles.titleLabel("New Checkout"), BorderLayout.NORTH);
-        header.add(UiStyles.mutedLabel(
-                "Choose a book with available inventory and the member receiving it."), BorderLayout.CENTER);
+        header.add(UiStyles.mutedLabel("Choose an available book and the member receiving it."),
+                BorderLayout.CENTER);
         content.add(header, BorderLayout.NORTH);
 
         JPanel selectors = new JPanel(new GridLayout(1, 2, 12, 0));
@@ -146,7 +146,7 @@ public final class CheckoutDialog extends JDialog {
         panel.setLayout(new BorderLayout(0, 9));
         JPanel heading = new JPanel(new BorderLayout());
         heading.setOpaque(false);
-        heading.add(UiStyles.sectionLabel("1. Select a Book"), BorderLayout.WEST);
+        heading.add(UiStyles.sectionLabel("Available Books"), BorderLayout.WEST);
         heading.add(UiStyles.mutedLabel(bookModel.getRowCount() + " available"), BorderLayout.EAST);
         panel.add(heading, BorderLayout.NORTH);
         JPanel body = new JPanel(new BorderLayout(0, 8));
@@ -173,7 +173,7 @@ public final class CheckoutDialog extends JDialog {
         panel.setLayout(new BorderLayout(0, 9));
         JPanel heading = new JPanel(new BorderLayout());
         heading.setOpaque(false);
-        heading.add(UiStyles.sectionLabel("2. Select a Member"), BorderLayout.WEST);
+        heading.add(UiStyles.sectionLabel("Members"), BorderLayout.WEST);
         heading.add(UiStyles.mutedLabel(memberModel.getRowCount() + " registered"), BorderLayout.EAST);
         panel.add(heading, BorderLayout.NORTH);
         JPanel body = new JPanel(new BorderLayout(0, 8));

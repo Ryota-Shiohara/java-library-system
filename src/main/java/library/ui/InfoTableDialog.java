@@ -43,7 +43,7 @@ public final class InfoTableDialog extends JDialog {
             List<Object[]> rows) {
         JPanel content = new JPanel(new BorderLayout(0, 14));
         content.setBackground(UiStyles.PAGE_BACKGROUND);
-        content.setBorder(BorderFactory.createEmptyBorder(18, 18, 14, 18));
+        content.setBorder(BorderFactory.createEmptyBorder(22, 24, 18, 24));
 
         JPanel header = new JPanel(new BorderLayout(0, 4));
         header.setOpaque(false);

@@ -19,6 +19,7 @@ import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JDialog;
+import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -40,19 +41,24 @@ import javax.swing.plaf.basic.BasicTabbedPaneUI;
 public final class UiStyles {
     private static final Logger LOGGER = Logger.getLogger(UiStyles.class.getName());
 
-    public static final Color PAGE_BACKGROUND = new Color(244, 247, 251);
+    public static final Color PAGE_BACKGROUND = new Color(243, 246, 250);
     public static final Color CARD_BACKGROUND = Color.WHITE;
-    public static final Color PRIMARY = new Color(30, 94, 184);
-    public static final Color PRIMARY_DARK = new Color(22, 70, 137);
-    public static final Color TEXT = new Color(28, 38, 52);
-    public static final Color MUTED_TEXT = new Color(92, 106, 124);
-    public static final Color BORDER = new Color(216, 224, 234);
-    public static final Color DANGER = new Color(177, 48, 48);
-    public static final Color DANGER_BACKGROUND = new Color(253, 235, 235);
-    public static final Color SUCCESS = new Color(35, 117, 73);
-    public static final Color SUCCESS_BACKGROUND = new Color(231, 247, 238);
-    public static final Color WARNING = new Color(154, 92, 12);
-    public static final Color WARNING_BACKGROUND = new Color(255, 245, 218);
+    public static final Color ALTERNATE_BACKGROUND = new Color(248, 250, 253);
+    public static final Color APP_BAR_BACKGROUND = new Color(24, 43, 68);
+    public static final Color APP_BAR_TEXT = new Color(250, 252, 255);
+    public static final Color APP_BAR_MUTED_TEXT = new Color(176, 192, 212);
+    public static final Color PRIMARY = new Color(43, 99, 166);
+    public static final Color PRIMARY_DARK = new Color(29, 70, 119);
+    public static final Color PRIMARY_TINT = new Color(228, 237, 248);
+    public static final Color TEXT = new Color(31, 42, 56);
+    public static final Color MUTED_TEXT = new Color(96, 112, 132);
+    public static final Color BORDER = new Color(213, 221, 231);
+    public static final Color DANGER = new Color(160, 62, 54);
+    public static final Color DANGER_BACKGROUND = new Color(247, 235, 232);
+    public static final Color SUCCESS = new Color(42, 108, 82);
+    public static final Color SUCCESS_BACKGROUND = new Color(229, 240, 234);
+    public static final Color WARNING = new Color(145, 98, 25);
+    public static final Color WARNING_BACKGROUND = new Color(248, 239, 219);
 
     private UiStyles() { }
 
@@ -66,9 +72,11 @@ public final class UiStyles {
         UIManager.put("Table.showHorizontalLines", Boolean.TRUE);
         UIManager.put("Table.showVerticalLines", Boolean.FALSE);
         UIManager.put("Table.gridColor", BORDER);
-        UIManager.put("Table.selectionBackground", new Color(218, 232, 252));
+        UIManager.put("Table.selectionBackground", PRIMARY_TINT);
         UIManager.put("Table.selectionForeground", TEXT);
         UIManager.put("Table.focusCellHighlightBorder", BorderFactory.createEmptyBorder());
+        UIManager.put("TextField.selectionBackground", PRIMARY_TINT);
+        UIManager.put("TextField.selectionForeground", TEXT);
     }
 
     public static JPanel card() {
@@ -78,20 +86,24 @@ public final class UiStyles {
     }
 
     public static Border cardBorder() {
-        return BorderFactory.createEmptyBorder(14, 16, 14, 16);
+        return BorderFactory.createEmptyBorder(15, 17, 15, 17);
+    }
+
+    public static Border compactCardBorder() {
+        return BorderFactory.createEmptyBorder(9, 13, 9, 13);
     }
 
     public static JLabel titleLabel(String text) {
         JLabel label = new JLabel(text);
         label.setForeground(TEXT);
-        label.setFont(label.getFont().deriveFont(Font.BOLD, 23f));
+        label.setFont(label.getFont().deriveFont(Font.BOLD, 25f));
         return label;
     }
 
     public static JLabel sectionLabel(String text) {
         JLabel label = new JLabel(text);
         label.setForeground(TEXT);
-        label.setFont(label.getFont().deriveFont(Font.BOLD, 15f));
+        label.setFont(label.getFont().deriveFont(Font.BOLD, 14f));
         return label;
     }
 
@@ -101,12 +113,36 @@ public final class UiStyles {
         return label;
     }
 
+    public static JLabel toolbarLabel(String text) {
+        JLabel label = mutedLabel(text.toUpperCase(java.util.Locale.ROOT));
+        label.setFont(label.getFont().deriveFont(Font.BOLD, 10f));
+        label.setBorder(BorderFactory.createEmptyBorder(0, 1, 0, 5));
+        return label;
+    }
+
     public static JPanel metricCard(String labelText, JLabel valueLabel) {
         JPanel panel = card();
         panel.setLayout(new java.awt.BorderLayout(0, 4));
         JLabel label = mutedLabel(labelText);
         valueLabel.setForeground(TEXT);
-        valueLabel.setFont(valueLabel.getFont().deriveFont(Font.BOLD, 21f));
+        valueLabel.setFont(valueLabel.getFont().deriveFont(Font.BOLD, 20f));
+        panel.add(label, java.awt.BorderLayout.NORTH);
+        panel.add(valueLabel, java.awt.BorderLayout.CENTER);
+        return panel;
+    }
+
+    public static JPanel metric(String labelText, JLabel valueLabel, boolean separated) {
+        JPanel panel = new JPanel(new java.awt.BorderLayout(0, 3));
+        panel.setOpaque(false);
+        Border spacing = BorderFactory.createEmptyBorder(2, separated ? 18 : 2, 2, 18);
+        panel.setBorder(separated
+                ? BorderFactory.createCompoundBorder(
+                        BorderFactory.createMatteBorder(0, 1, 0, 0, BORDER), spacing)
+                : spacing);
+        JLabel label = mutedLabel(labelText.toUpperCase(java.util.Locale.ROOT));
+        label.setFont(label.getFont().deriveFont(Font.BOLD, 10f));
+        valueLabel.setForeground(TEXT);
+        valueLabel.setFont(valueLabel.getFont().deriveFont(Font.BOLD, 20f));
         panel.add(label, java.awt.BorderLayout.NORTH);
         panel.add(valueLabel, java.awt.BorderLayout.CENTER);
         return panel;
@@ -124,26 +160,35 @@ public final class UiStyles {
         return new StyledButton(text, ButtonStyle.DANGER);
     }
 
+    public static JButton quietButton(String text) {
+        return new StyledButton(text, ButtonStyle.QUIET);
+    }
+
     public static void configureTable(JTable table) {
         table.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
         table.setAutoCreateRowSorter(true);
-        table.setRowHeight(30);
+        table.setRowHeight(35);
         table.setFillsViewportHeight(true);
         table.setShowVerticalLines(false);
         table.setShowHorizontalLines(true);
         table.setGridColor(BORDER);
         table.setIntercellSpacing(new Dimension(0, 1));
-        table.setSelectionBackground(new Color(218, 232, 252));
+        table.setSelectionBackground(PRIMARY_TINT);
         table.setSelectionForeground(TEXT);
         table.setBackground(CARD_BACKGROUND);
         table.setForeground(TEXT);
+        table.setFont(table.getFont().deriveFont(13f));
+        table.setDefaultRenderer(Object.class, new BaseTableRenderer(SwingConstants.LEADING));
+        table.setDefaultRenderer(String.class, new BaseTableRenderer(SwingConstants.LEADING));
+        table.setDefaultRenderer(Integer.class, new BaseTableRenderer(SwingConstants.CENTER));
         JTableHeader header = table.getTableHeader();
         header.setReorderingAllowed(false);
-        header.setPreferredSize(new Dimension(header.getPreferredSize().width, 34));
-        header.setFont(header.getFont().deriveFont(Font.BOLD));
-        header.setForeground(TEXT);
-        header.setBackground(new Color(247, 249, 252));
+        header.setPreferredSize(new Dimension(header.getPreferredSize().width, 37));
+        header.setFont(header.getFont().deriveFont(Font.BOLD, 11f));
+        header.setForeground(MUTED_TEXT);
+        header.setBackground(CARD_BACKGROUND);
         header.setOpaque(true);
+        header.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, BORDER));
     }
 
     public static void configureTabs(JTabbedPane tabs) {
@@ -159,15 +204,31 @@ public final class UiStyles {
         field.setBackground(CARD_BACKGROUND);
         field.setForeground(TEXT);
         field.setCaretColor(TEXT);
+        field.setFont(field.getFont().deriveFont(13f));
         field.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(190, 202, 218)),
-                BorderFactory.createEmptyBorder(7, 9, 7, 9)));
+                BorderFactory.createLineBorder(new Color(181, 193, 207)),
+                BorderFactory.createEmptyBorder(8, 10, 8, 10)));
+    }
+
+    public static void configureReadOnlyTextField(JTextField field) {
+        field.setEditable(false);
+        field.setBackground(new Color(237, 241, 246));
+        field.setForeground(MUTED_TEXT);
+        field.setCaretColor(MUTED_TEXT);
+    }
+
+    public static void configureComboBox(JComboBox<?> comboBox) {
+        comboBox.setBackground(CARD_BACKGROUND);
+        comboBox.setForeground(TEXT);
+        comboBox.setFont(comboBox.getFont().deriveFont(13f));
+        comboBox.setBorder(BorderFactory.createLineBorder(new Color(181, 193, 207)));
     }
 
     public static JScrollPane tableScrollPane(JTable table) {
         JScrollPane scrollPane = new JScrollPane(table);
         scrollPane.setBorder(BorderFactory.createLineBorder(BORDER));
         scrollPane.getViewport().setBackground(CARD_BACKGROUND);
+        scrollPane.getVerticalScrollBar().setUnitIncrement(18);
         return scrollPane;
     }
 
@@ -179,18 +240,16 @@ public final class UiStyles {
     }
 
     public static TableCellRenderer statusRenderer() {
-        return new DefaultTableCellRenderer() {
+        return new BaseTableRenderer(SwingConstants.CENTER) {
             @Override
             public Component getTableCellRendererComponent(
                     JTable table, Object value, boolean selected, boolean focused, int row, int column) {
                 JLabel label = (JLabel) super.getTableCellRendererComponent(
                         table, value, selected, focused, row, column);
-                label.setHorizontalAlignment(SwingConstants.CENTER);
                 label.setFont(label.getFont().deriveFont(Font.BOLD));
                 if (!selected) {
                     boolean overdue = "Overdue".equals(value);
                     label.setForeground(overdue ? DANGER : SUCCESS);
-                    label.setBackground(overdue ? DANGER_BACKGROUND : SUCCESS_BACKGROUND);
                 }
                 return label;
             }
@@ -198,18 +257,16 @@ public final class UiStyles {
     }
 
     public static TableCellRenderer availabilityRenderer() {
-        return new DefaultTableCellRenderer() {
+        return new BaseTableRenderer(SwingConstants.CENTER) {
             @Override
             public Component getTableCellRendererComponent(
                     JTable table, Object value, boolean selected, boolean focused, int row, int column) {
                 JLabel label = (JLabel) super.getTableCellRendererComponent(
                         table, value, selected, focused, row, column);
-                label.setHorizontalAlignment(SwingConstants.CENTER);
                 label.setFont(label.getFont().deriveFont(Font.BOLD));
                 if (!selected && value instanceof Number number) {
                     boolean available = number.intValue() > 0;
                     label.setForeground(available ? SUCCESS : DANGER);
-                    label.setBackground(available ? SUCCESS_BACKGROUND : DANGER_BACKGROUND);
                 }
                 return label;
             }
@@ -276,12 +333,10 @@ public final class UiStyles {
             canvas.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
             int width = getWidth();
             int height = getHeight();
-            canvas.setColor(new Color(27, 43, 65, 18));
-            canvas.fillRoundRect(2, 3, Math.max(0, width - 4), Math.max(0, height - 5), 18, 18);
             canvas.setColor(getBackground());
-            canvas.fillRoundRect(1, 1, Math.max(0, width - 3), Math.max(0, height - 4), 18, 18);
+            canvas.fillRoundRect(0, 0, Math.max(0, width - 1), Math.max(0, height - 1), 8, 8);
             canvas.setColor(BORDER);
-            canvas.drawRoundRect(1, 1, Math.max(0, width - 3), Math.max(0, height - 4), 18, 18);
+            canvas.drawRoundRect(0, 0, Math.max(0, width - 1), Math.max(0, height - 1), 8, 8);
             canvas.dispose();
             super.paintComponent(graphics);
         }
@@ -290,15 +345,16 @@ public final class UiStyles {
     private enum ButtonStyle {
         PRIMARY,
         SECONDARY,
-        DANGER
+        DANGER,
+        QUIET
     }
 
     private static final class CleanTabbedPaneUi extends BasicTabbedPaneUI {
         @Override
         protected void installDefaults() {
             super.installDefaults();
-            tabAreaInsets = new Insets(5, 18, 0, 18);
-            tabInsets = new Insets(10, 18, 10, 18);
+            tabAreaInsets = new Insets(0, 22, 0, 22);
+            tabInsets = new Insets(12, 17, 11, 17);
             selectedTabPadInsets = new Insets(0, 0, 0, 0);
             contentBorderInsets = new Insets(0, 0, 0, 0);
         }
@@ -313,7 +369,7 @@ public final class UiStyles {
                 int width,
                 int height,
                 boolean selected) {
-            graphics.setColor(selected ? CARD_BACKGROUND : PAGE_BACKGROUND);
+            graphics.setColor(selected ? PRIMARY_TINT : CARD_BACKGROUND);
             graphics.fillRect(x, y, width, height);
         }
 
@@ -329,7 +385,7 @@ public final class UiStyles {
                 boolean selected) {
             if (selected) {
                 graphics.setColor(PRIMARY);
-                graphics.fillRoundRect(x + 10, y + height - 3, width - 20, 3, 3, 3);
+                graphics.fillRect(x + 8, y + height - 3, width - 16, 3);
             }
         }
 
@@ -354,15 +410,15 @@ public final class UiStyles {
         private StyledButton(String text, ButtonStyle style) {
             super(text);
             this.style = style;
-            setBorder(BorderFactory.createEmptyBorder(8, 14, 8, 14));
+            setBorder(BorderFactory.createEmptyBorder(9, 15, 9, 15));
             setContentAreaFilled(false);
             setBorderPainted(false);
             setFocusPainted(false);
             setOpaque(false);
             setRolloverEnabled(true);
             setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-            setMargin(new Insets(7, 13, 7, 13));
-            setFont(getFont().deriveFont(Font.BOLD));
+            setMargin(new Insets(8, 14, 8, 14));
+            setFont(getFont().deriveFont(Font.BOLD, 12f));
         }
 
         @Override
@@ -373,10 +429,14 @@ public final class UiStyles {
             Color outline = outlineColor();
             setForeground(foregroundColor());
             canvas.setColor(fill);
-            canvas.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 12, 12);
+            canvas.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 7, 7);
             if (outline != null) {
                 canvas.setColor(outline);
-                canvas.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 12, 12);
+                canvas.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 7, 7);
+            }
+            if (isFocusOwner()) {
+                canvas.setColor(new Color(PRIMARY.getRed(), PRIMARY.getGreen(), PRIMARY.getBlue(), 115));
+                canvas.drawRoundRect(2, 2, getWidth() - 5, getHeight() - 5, 5, 5);
             }
             canvas.dispose();
             super.paintComponent(graphics);
@@ -398,9 +458,12 @@ public final class UiStyles {
                 return DANGER_BACKGROUND;
             }
             if (style == ButtonStyle.SECONDARY && (pressed || rollover)) {
-                return new Color(237, 244, 254);
+                return PRIMARY_TINT;
             }
-            return CARD_BACKGROUND;
+            if (style == ButtonStyle.QUIET && (pressed || rollover)) {
+                return new Color(235, 240, 246);
+            }
+            return style == ButtonStyle.QUIET ? new Color(0, 0, 0, 0) : CARD_BACKGROUND;
         }
 
         private Color outlineColor() {
@@ -409,8 +472,9 @@ public final class UiStyles {
             }
             return switch (style) {
                 case PRIMARY -> null;
-                case SECONDARY -> new Color(184, 204, 230);
-                case DANGER -> new Color(226, 180, 180);
+                case SECONDARY -> new Color(157, 178, 202);
+                case DANGER -> new Color(215, 176, 171);
+                case QUIET -> null;
             };
         }
 
@@ -422,7 +486,35 @@ public final class UiStyles {
                 case PRIMARY -> Color.WHITE;
                 case SECONDARY -> PRIMARY_DARK;
                 case DANGER -> DANGER;
+                case QUIET -> TEXT;
             };
+        }
+    }
+
+    @SuppressWarnings("serial")
+    private static class BaseTableRenderer extends DefaultTableCellRenderer {
+        private final int alignment;
+
+        private BaseTableRenderer(int alignment) {
+            this.alignment = alignment;
+            setOpaque(true);
+        }
+
+        @Override
+        public Component getTableCellRendererComponent(
+                JTable table, Object value, boolean selected, boolean focused, int row, int column) {
+            JLabel label = (JLabel) super.getTableCellRendererComponent(
+                    table, value, selected, focused, row, column);
+            label.setHorizontalAlignment(alignment);
+            label.setBorder(BorderFactory.createEmptyBorder(0, 10, 0, 10));
+            if (selected) {
+                label.setBackground(PRIMARY_TINT);
+                label.setForeground(TEXT);
+            } else {
+                label.setBackground(row % 2 == 0 ? CARD_BACKGROUND : ALTERNATE_BACKGROUND);
+                label.setForeground(TEXT);
+            }
+            return label;
         }
     }
 }
