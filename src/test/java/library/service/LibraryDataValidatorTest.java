@@ -37,6 +37,36 @@ class LibraryDataValidatorTest {
                                 java.time.LocalDate.of(2026, 7, 15))))));
     }
 
+    @Test
+    void rejectsLoanThatReferencesUnknownBook() {
+        assertThrows(DataStoreException.class, () -> LibraryDataValidator.validate(
+                new FixedBookRepository(List.of()),
+                new FixedMemberRepository(List.of(new Member("M1", "Ada"))),
+                new FixedLoanRepository(List.of(new Loan("loan-1", "B1", "M1",
+                        java.time.LocalDate.of(2026, 7, 1), java.time.LocalDate.of(2026, 7, 15))))));
+    }
+
+    @Test
+    void rejectsLoanThatReferencesUnknownMember() {
+        assertThrows(DataStoreException.class, () -> LibraryDataValidator.validate(
+                new FixedBookRepository(List.of(new Book("B1", "Title", "Genre", 1))),
+                new FixedMemberRepository(List.of()),
+                new FixedLoanRepository(List.of(new Loan("loan-1", "B1", "M1",
+                        java.time.LocalDate.of(2026, 7, 1), java.time.LocalDate.of(2026, 7, 15))))));
+    }
+
+    @Test
+    void rejectsDuplicateBookAndMemberPair() {
+        assertThrows(DataStoreException.class, () -> LibraryDataValidator.validate(
+                new FixedBookRepository(List.of(new Book("B1", "Title", "Genre", 2))),
+                new FixedMemberRepository(List.of(new Member("M1", "Ada"))),
+                new FixedLoanRepository(List.of(
+                        new Loan("loan-1", "B1", "M1", java.time.LocalDate.of(2026, 7, 1),
+                                java.time.LocalDate.of(2026, 7, 15)),
+                        new Loan("loan-2", "B1", "M1", java.time.LocalDate.of(2026, 7, 2),
+                                java.time.LocalDate.of(2026, 7, 16))))));
+    }
+
     private static final class FixedBookRepository implements BookRepository {
         private final List<Book> books;
 

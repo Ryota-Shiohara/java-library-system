@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
+import library.exception.DuplicateIdException;
 import library.exception.EntityNotFoundException;
 import library.exception.OperationNotAllowedException;
 import library.model.Book;
@@ -55,8 +56,69 @@ class LoanServiceTest {
         assertThrows(OperationNotAllowedException.class, () -> fixture.service.checkout("B1", "M1"));
         assertThrows(OperationNotAllowedException.class, () -> fixture.service.checkout("B1", "M2"));
         assertThrows(EntityNotFoundException.class, () -> fixture.service.checkout("UNKNOWN", "M2"));
+        assertThrows(EntityNotFoundException.class, () -> fixture.service.checkout("B1", "UNKNOWN"));
         assertEquals(1, fixture.service.listActiveLoans().size());
         assertEquals("M1", fixture.service.listActiveLoans().get(0).member().id());
+    }
+
+    @Test
+    void updatesAvailableCopiesAfterCheckoutAndReturn() {
+        Fixture fixture = new Fixture(LocalDate.of(2026, 7, 1));
+        fixture.addBook("B1", "Two Copies", 2);
+        fixture.addMember("M1", "Ada");
+        BookService bookService = new BookService(fixture.books, fixture.loans);
+
+        assertEquals(2, bookService.availableCopies("B1"));
+        Loan loan = fixture.service.checkout("B1", "M1");
+        assertEquals(1, bookService.availableCopies("B1"));
+        fixture.service.returnLoan(loan.id());
+        assertEquals(2, bookService.availableCopies("B1"));
+    }
+
+    @Test
+    void allowsLoansForDifferentBookIdsWithTheSameTitle() {
+        Fixture fixture = new Fixture(LocalDate.of(2026, 7, 1));
+        fixture.addBook("B1", "Shared Title", 1);
+        fixture.addBook("B2", "Shared Title", 1);
+        fixture.addMember("M1", "Ada");
+        fixture.addMember("M2", "Grace");
+
+        fixture.service.checkout("B1", "M1");
+        fixture.service.checkout("B2", "M2");
+
+        assertEquals(List.of("B1", "B2"), fixture.service.listActiveLoans().stream()
+                .map(details -> details.book().id()).toList());
+    }
+
+    @Test
+    void rejectsDuplicateGeneratedLoanIdWithoutChangingState() {
+        InMemoryBookRepository books = new InMemoryBookRepository();
+        InMemoryMemberRepository members = new InMemoryMemberRepository();
+        InMemoryLoanRepository loans = new InMemoryLoanRepository();
+        LocalDate date = LocalDate.of(2026, 7, 1);
+        books.save(new Book("B1", "First", "Genre", 1));
+        books.save(new Book("B2", "Second", "Genre", 1));
+        members.save(new Member("M1", "Ada"));
+        members.save(new Member("M2", "Grace"));
+        loans.save(new Loan("loan-1", "B1", "M1", date, date.plusDays(14)));
+        LoanService service = new LoanService(books, members, loans, fixedClock(date), () -> "loan-1");
+
+        assertThrows(DuplicateIdException.class, () -> service.checkout("B2", "M2"));
+        assertEquals(List.of("loan-1"), service.listActiveLoans().stream().map(LoanDetails::id).toList());
+    }
+
+    @Test
+    void validatesUnknownQueryReferencesAndReturnsImmutableLists() {
+        Fixture fixture = new Fixture(LocalDate.of(2026, 7, 1));
+        fixture.addBook("B1", "Title", 1);
+        fixture.addMember("M1", "Ada");
+
+        assertTrue(fixture.service.findActiveLoanById("missing").isEmpty());
+        assertThrows(EntityNotFoundException.class, () -> fixture.service.findActiveLoansByBook("UNKNOWN"));
+        assertThrows(EntityNotFoundException.class, () -> fixture.service.findBorrowersByBook("UNKNOWN"));
+        assertThrows(EntityNotFoundException.class, () -> fixture.service.findActiveLoansByMember("UNKNOWN"));
+        assertThrows(EntityNotFoundException.class, () -> fixture.service.findBorrowedBooksByMember("UNKNOWN"));
+        assertThrows(UnsupportedOperationException.class, () -> fixture.service.listActiveLoans().add(null));
     }
 
     @Test

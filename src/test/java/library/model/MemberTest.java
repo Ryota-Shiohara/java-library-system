@@ -17,6 +17,7 @@ class MemberTest {
 
     @Test
     void rejectsBlankRequiredValues() {
+        assertThrows(ValidationException.class, () -> new Member(" ", "Name"));
         assertThrows(ValidationException.class, () -> new Member("M1", " \n "));
         assertThrows(ValidationException.class, () -> new Member("bad id", "Name"));
     }

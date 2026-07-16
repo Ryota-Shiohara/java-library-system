@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import library.exception.DuplicateIdException;
+import library.exception.EntityNotFoundException;
 import library.exception.OperationNotAllowedException;
 import library.model.Member;
 import library.repository.LoanQuery;
@@ -42,6 +43,19 @@ class MemberServiceTest {
         loanQuery.hasActiveLoan = false;
         service.deleteMember("M1");
         assertEquals(List.of(), service.listMembers());
+    }
+
+    @Test
+    void rejectsUnknownMemberOperationsWithoutChangingState() {
+        InMemoryMemberRepository repository = new InMemoryMemberRepository();
+        MemberService service = new MemberService(repository, new MutableLoanQuery());
+        service.addMember("M1", "Ada");
+
+        assertThrows(EntityNotFoundException.class, () -> service.updateMember("M2", "Grace"));
+        assertThrows(EntityNotFoundException.class, () -> service.deleteMember("M2"));
+        assertEquals(List.of("M1"), service.listMembers().stream().map(Member::id).toList());
+        assertThrows(UnsupportedOperationException.class,
+                () -> service.listMembers().add(new Member("M2", "Grace")));
     }
 
     private static final class MutableLoanQuery implements LoanQuery {
