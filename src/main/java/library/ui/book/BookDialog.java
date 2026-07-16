@@ -35,7 +35,7 @@ public final class BookDialog extends JDialog {
         super(owner, book == null ? "Add Book" : "Edit Book", Dialog.ModalityType.APPLICATION_MODAL);
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         buildContent(book);
-        setMinimumSize(new Dimension(520, 480));
+        setMinimumSize(new Dimension(560, 500));
         pack();
         setLocationRelativeTo(owner);
         UiStyles.bindEscape(this);
@@ -76,9 +76,10 @@ public final class BookDialog extends JDialog {
         UiStyles.configureTextField(titleField);
         UiStyles.configureTextField(genreField);
         UiStyles.configureTextField(totalCopiesField);
+        UiStyles.configureComboBox(ndcBox);
         JPanel content = new JPanel(new BorderLayout(0, 14));
         content.setBackground(UiStyles.PAGE_BACKGROUND);
-        content.setBorder(BorderFactory.createEmptyBorder(18, 18, 14, 18));
+        content.setBorder(BorderFactory.createEmptyBorder(22, 24, 18, 24));
 
         JPanel header = new JPanel(new BorderLayout(0, 4));
         header.setOpaque(false);
@@ -108,7 +109,7 @@ public final class BookDialog extends JDialog {
 
         if (book != null) {
             idField.setText(book.id());
-            idField.setEditable(false);
+            UiStyles.configureReadOnlyTextField(idField);
             idField.setToolTipText("Book IDs cannot be changed after registration.");
             titleField.setText(book.title());
             genreField.setText(book.genre());
@@ -146,6 +147,7 @@ public final class BookDialog extends JDialog {
         labels.setOpaque(false);
         JLabel label = new JLabel(labelText);
         label.setForeground(UiStyles.TEXT);
+        label.setFont(label.getFont().deriveFont(java.awt.Font.BOLD, 12f));
         label.setLabelFor(field);
         JLabel help = UiStyles.mutedLabel(helpText);
         help.setFont(help.getFont().deriveFont(11f));

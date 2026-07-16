@@ -55,10 +55,11 @@ public final class BookPanel extends JPanel {
     private final JLabel availableCountLabel = new JLabel("0");
     private final JLabel resultLabel = UiStyles.mutedLabel("0 books");
     private final JLabel messageLabel = UiStyles.mutedLabel("Select a book to manage it.");
+    private final JButton addButton = UiStyles.primaryButton("Add Book");
     private final JButton editButton = UiStyles.secondaryButton("Edit");
     private final JButton deleteButton = UiStyles.dangerButton("Delete");
-    private final JButton borrowersButton = UiStyles.secondaryButton("Borrowers");
-    private final JButton historyButton = UiStyles.secondaryButton("History");
+    private final JButton borrowersButton = UiStyles.quietButton("Borrowers");
+    private final JButton historyButton = UiStyles.quietButton("History");
     private String currentQuery = "";
     private String currentNdcCode = "";
 
@@ -104,8 +105,8 @@ public final class BookPanel extends JPanel {
     }
 
     private void buildContent() {
-        setLayout(new BorderLayout(0, 14));
-        setBorder(BorderFactory.createEmptyBorder(16, 18, 16, 18));
+        setLayout(new BorderLayout(0, 12));
+        setBorder(BorderFactory.createEmptyBorder(14, 22, 14, 22));
         setBackground(UiStyles.PAGE_BACKGROUND);
         add(createTopArea(), BorderLayout.NORTH);
         add(createTableArea(), BorderLayout.CENTER);
@@ -117,25 +118,32 @@ public final class BookPanel extends JPanel {
         top.setLayout(new BoxLayout(top, BoxLayout.Y_AXIS));
         top.setOpaque(false);
 
-        JPanel heading = new JPanel(new BorderLayout(12, 0));
+        JPanel heading = new JPanel(new BorderLayout(24, 0));
         heading.setOpaque(false);
         JPanel text = new JPanel(new BorderLayout(0, 3));
         text.setOpaque(false);
         text.add(UiStyles.titleLabel("Books"), BorderLayout.NORTH);
-        text.add(UiStyles.mutedLabel("Search the catalog, track inventory, and review circulation."),
+        text.add(UiStyles.mutedLabel("Catalog records, inventory, and circulation activity."),
                 BorderLayout.CENTER);
         heading.add(text, BorderLayout.CENTER);
+        addButton.setToolTipText("Register a new catalog item");
+        addButton.addActionListener(event -> addBook());
+        JPanel primaryAction = new JPanel(new FlowLayout(FlowLayout.TRAILING, 0, 2));
+        primaryAction.setOpaque(false);
+        primaryAction.add(addButton);
+        heading.add(primaryAction, BorderLayout.EAST);
 
         top.add(heading);
-        top.add(Box.createVerticalStrut(12));
-
-        JPanel metrics = new JPanel(new GridLayout(1, 3, 10, 0));
-        metrics.setOpaque(false);
-        metrics.add(UiStyles.metricCard("Total copies", copyCountLabel));
-        metrics.add(UiStyles.metricCard("On loan", loanedCountLabel));
-        metrics.add(UiStyles.metricCard("Available", availableCountLabel));
-        top.add(metrics);
         top.add(Box.createVerticalStrut(10));
+
+        JPanel metrics = UiStyles.card();
+        metrics.setBorder(UiStyles.compactCardBorder());
+        metrics.setLayout(new GridLayout(1, 3, 0, 0));
+        metrics.add(UiStyles.metric("Total copies", copyCountLabel, false));
+        metrics.add(UiStyles.metric("On loan", loanedCountLabel, true));
+        metrics.add(UiStyles.metric("Available", availableCountLabel, true));
+        top.add(metrics);
+        top.add(Box.createVerticalStrut(8));
         top.add(createFilters());
         return top;
     }
@@ -145,6 +153,7 @@ public final class BookPanel extends JPanel {
         for (NdcCategory category : NdcCategory.values()) {
             ndcFilterBox.addItem(new NdcFilter(category.code(), category.toString()));
         }
+        UiStyles.configureComboBox(ndcFilterBox);
         ndcFilterBox.insertItemAt(new NdcFilter("", "All categories"), 0);
         ndcFilterBox.setSelectedIndex(0);
         ndcFilterBox.setToolTipText("Filter books by NDC category");
@@ -156,16 +165,17 @@ public final class BookPanel extends JPanel {
 
         searchField.setToolTipText("Search by ID, title, or genre");
         searchField.addActionListener(event -> searchBooks());
-        JButton searchButton = UiStyles.primaryButton("Search");
+        JButton searchButton = UiStyles.secondaryButton("Search");
         searchButton.addActionListener(event -> searchBooks());
-        JButton clearButton = UiStyles.secondaryButton("Clear");
+        JButton clearButton = UiStyles.quietButton("Clear");
         clearButton.addActionListener(event -> clearSearch());
 
         JPanel filters = UiStyles.card();
+        filters.setBorder(UiStyles.compactCardBorder());
         filters.setLayout(new BorderLayout(10, 8));
         JPanel searchGroup = new JPanel(new FlowLayout(FlowLayout.LEADING, 7, 0));
         searchGroup.setOpaque(false);
-        JLabel searchLabel = new JLabel("Search");
+        JLabel searchLabel = new JLabel("Search books");
         searchLabel.setLabelFor(searchField);
         searchGroup.add(searchLabel);
         searchGroup.add(searchField);
@@ -205,45 +215,38 @@ public final class BookPanel extends JPanel {
         deleteButton.addActionListener(event -> deleteBook());
         borrowersButton.addActionListener(event -> showBorrowers());
         historyButton.addActionListener(event -> showHistory());
-        JButton addButton = UiStyles.primaryButton("Add Book");
-        addButton.setToolTipText("Register a new catalog item");
-        addButton.addActionListener(event -> addBook());
-        JButton statisticsButton = UiStyles.secondaryButton("Statistics");
+        JButton statisticsButton = UiStyles.quietButton("Statistics");
         statisticsButton.setToolTipText("View inventory and loan totals by NDC category");
         statisticsButton.addActionListener(event -> showStatistics());
 
         JPanel tableCard = UiStyles.card();
         tableCard.setLayout(new BorderLayout(0, 10));
-        JPanel tableHeading = new JPanel(new BorderLayout());
-        tableHeading.setOpaque(false);
-        tableHeading.add(UiStyles.sectionLabel("Catalog"), BorderLayout.WEST);
-        tableHeading.add(resultLabel, BorderLayout.EAST);
-        JPanel tableTop = new JPanel();
-        tableTop.setLayout(new BoxLayout(tableTop, BoxLayout.Y_AXIS));
-        tableTop.setOpaque(false);
-        tableTop.add(tableHeading);
-        tableTop.add(Box.createVerticalStrut(9));
-
         JPanel commandBar = new JPanel(new BorderLayout(8, 0));
         commandBar.setOpaque(false);
         JPanel recordActions = new JPanel(new FlowLayout(FlowLayout.LEADING, 7, 0));
         recordActions.setOpaque(false);
-        recordActions.add(addButton);
+        recordActions.add(UiStyles.sectionLabel("Book Catalog"));
+        resultLabel.setBorder(BorderFactory.createEmptyBorder(0, 2, 0, 8));
+        recordActions.add(resultLabel);
+        recordActions.add(UiStyles.toolbarLabel("Selected book"));
         recordActions.add(editButton);
         recordActions.add(deleteButton);
         commandBar.add(recordActions, BorderLayout.WEST);
         JPanel relatedActions = new JPanel(new FlowLayout(FlowLayout.TRAILING, 7, 0));
         relatedActions.setOpaque(false);
+        relatedActions.add(UiStyles.toolbarLabel("View"));
         relatedActions.add(borrowersButton);
         relatedActions.add(historyButton);
         relatedActions.add(statisticsButton);
         commandBar.add(relatedActions, BorderLayout.EAST);
-        tableTop.add(commandBar);
-        tableCard.add(tableTop, BorderLayout.NORTH);
+        tableCard.add(commandBar, BorderLayout.NORTH);
         tableCard.add(UiStyles.tableScrollPane(table), BorderLayout.CENTER);
 
         JPanel actionBar = new JPanel(new BorderLayout());
         actionBar.setOpaque(false);
+        actionBar.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(1, 0, 0, 0, UiStyles.BORDER),
+                BorderFactory.createEmptyBorder(9, 2, 0, 2)));
         actionBar.add(messageLabel, BorderLayout.CENTER);
         tableCard.add(actionBar, BorderLayout.SOUTH);
         return tableCard;

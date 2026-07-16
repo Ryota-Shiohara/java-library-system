@@ -7,8 +7,6 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.BorderFactory;
-import javax.swing.Box;
-import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -40,6 +38,8 @@ public final class LoanPanel extends JPanel {
     private final JTable table = new JTable(tableModel);
     private final JLabel resultLabel = UiStyles.mutedLabel("0 active loans");
     private final JLabel messageLabel = UiStyles.mutedLabel("Select a loan to return it.");
+    private final JButton checkoutButton = UiStyles.primaryButton("New Checkout");
+    private final JButton historyButton = UiStyles.quietButton("Loan History");
     private final JButton returnButton = UiStyles.dangerButton("Return Selected");
 
     public LoanPanel(
@@ -83,22 +83,31 @@ public final class LoanPanel extends JPanel {
     }
 
     private void buildContent() {
-        setLayout(new BorderLayout(0, 14));
-        setBorder(BorderFactory.createEmptyBorder(16, 18, 16, 18));
+        setLayout(new BorderLayout(0, 12));
+        setBorder(BorderFactory.createEmptyBorder(14, 22, 14, 22));
         setBackground(UiStyles.PAGE_BACKGROUND);
         add(createTopArea(), BorderLayout.NORTH);
         add(createTableArea(), BorderLayout.CENTER);
     }
 
     private JPanel createTopArea() {
-        JPanel heading = new JPanel(new BorderLayout(12, 0));
+        JPanel heading = new JPanel(new BorderLayout(24, 0));
         heading.setOpaque(false);
         JPanel text = new JPanel(new BorderLayout(0, 3));
         text.setOpaque(false);
         text.add(UiStyles.titleLabel("Loans"), BorderLayout.NORTH);
-        text.add(UiStyles.mutedLabel("Check out available books, monitor due dates, and process returns."),
+        text.add(UiStyles.mutedLabel("Active checkouts, due dates, and returns."),
                 BorderLayout.CENTER);
         heading.add(text, BorderLayout.CENTER);
+        checkoutButton.setToolTipText("Choose an available book and a registered member");
+        checkoutButton.addActionListener(event -> checkout());
+        historyButton.setToolTipText("Search completed loans");
+        historyButton.addActionListener(event -> showHistory());
+        JPanel actions = new JPanel(new FlowLayout(FlowLayout.TRAILING, 7, 2));
+        actions.setOpaque(false);
+        actions.add(historyButton);
+        actions.add(checkoutButton);
+        heading.add(actions, BorderLayout.EAST);
         return heading;
     }
 
@@ -112,35 +121,24 @@ public final class LoanPanel extends JPanel {
             }
         });
         returnButton.addActionListener(event -> returnLoan());
-        JButton checkoutButton = UiStyles.primaryButton("New Checkout");
-        checkoutButton.setToolTipText("Choose an available book and a registered member");
-        checkoutButton.addActionListener(event -> checkout());
-        JButton historyButton = UiStyles.secondaryButton("Loan History");
-        historyButton.setToolTipText("Search completed loans");
-        historyButton.addActionListener(event -> showHistory());
 
         JPanel tableCard = UiStyles.card();
         tableCard.setLayout(new BorderLayout(0, 10));
-        JPanel tableHeading = new JPanel(new BorderLayout());
-        tableHeading.setOpaque(false);
-        tableHeading.add(UiStyles.sectionLabel("Active Circulation"), BorderLayout.WEST);
-        tableHeading.add(resultLabel, BorderLayout.EAST);
-        JPanel tableTop = new JPanel();
-        tableTop.setLayout(new BoxLayout(tableTop, BoxLayout.Y_AXIS));
-        tableTop.setOpaque(false);
-        tableTop.add(tableHeading);
-        tableTop.add(Box.createVerticalStrut(9));
         JPanel commandBar = new JPanel(new FlowLayout(FlowLayout.LEADING, 7, 0));
         commandBar.setOpaque(false);
-        commandBar.add(checkoutButton);
+        commandBar.add(UiStyles.sectionLabel("Active Loans"));
+        resultLabel.setBorder(BorderFactory.createEmptyBorder(0, 2, 0, 8));
+        commandBar.add(resultLabel);
+        commandBar.add(UiStyles.toolbarLabel("Selected loan"));
         commandBar.add(returnButton);
-        commandBar.add(historyButton);
-        tableTop.add(commandBar);
-        tableCard.add(tableTop, BorderLayout.NORTH);
+        tableCard.add(commandBar, BorderLayout.NORTH);
         tableCard.add(UiStyles.tableScrollPane(table), BorderLayout.CENTER);
 
         JPanel actionBar = new JPanel(new BorderLayout());
         actionBar.setOpaque(false);
+        actionBar.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(1, 0, 0, 0, UiStyles.BORDER),
+                BorderFactory.createEmptyBorder(9, 2, 0, 2)));
         actionBar.add(messageLabel, BorderLayout.CENTER);
         tableCard.add(actionBar, BorderLayout.SOUTH);
         return tableCard;

@@ -29,7 +29,7 @@ public final class MemberDialog extends JDialog {
         super(owner, member == null ? "Add Member" : "Edit Member", Dialog.ModalityType.APPLICATION_MODAL);
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         buildContent(member);
-        setMinimumSize(new Dimension(500, 350));
+        setMinimumSize(new Dimension(540, 370));
         pack();
         setLocationRelativeTo(owner);
         UiStyles.bindEscape(this);
@@ -53,7 +53,7 @@ public final class MemberDialog extends JDialog {
         UiStyles.configureTextField(nameField);
         JPanel content = new JPanel(new BorderLayout(0, 14));
         content.setBackground(UiStyles.PAGE_BACKGROUND);
-        content.setBorder(BorderFactory.createEmptyBorder(18, 18, 14, 18));
+        content.setBorder(BorderFactory.createEmptyBorder(22, 24, 18, 24));
 
         JPanel header = new JPanel(new BorderLayout(0, 4));
         header.setOpaque(false);
@@ -81,7 +81,7 @@ public final class MemberDialog extends JDialog {
 
         if (member != null) {
             idField.setText(member.id());
-            idField.setEditable(false);
+            UiStyles.configureReadOnlyTextField(idField);
             idField.setToolTipText("Member IDs cannot be changed after registration.");
             nameField.setText(member.name());
         }
@@ -116,6 +116,7 @@ public final class MemberDialog extends JDialog {
         labels.setOpaque(false);
         JLabel label = new JLabel(labelText);
         label.setForeground(UiStyles.TEXT);
+        label.setFont(label.getFont().deriveFont(java.awt.Font.BOLD, 12f));
         label.setLabelFor(field);
         JLabel help = UiStyles.mutedLabel(helpText);
         help.setFont(help.getFont().deriveFont(11f));

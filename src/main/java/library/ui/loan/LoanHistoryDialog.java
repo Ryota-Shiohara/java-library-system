@@ -71,9 +71,10 @@ public final class LoanHistoryDialog extends JDialog {
         UiStyles.configureTextField(queryField);
         UiStyles.configureTextField(fromDateField);
         UiStyles.configureTextField(toDateField);
+        UiStyles.configureComboBox(ndcFilterBox);
         JPanel content = new JPanel(new BorderLayout(0, 14));
         content.setBackground(UiStyles.PAGE_BACKGROUND);
-        content.setBorder(BorderFactory.createEmptyBorder(18, 18, 14, 18));
+        content.setBorder(BorderFactory.createEmptyBorder(22, 24, 18, 24));
 
         JPanel top = new JPanel(new BorderLayout(0, 12));
         top.setOpaque(false);
@@ -122,10 +123,11 @@ public final class LoanHistoryDialog extends JDialog {
 
         JButton searchButton = UiStyles.primaryButton("Search");
         searchButton.addActionListener(event -> refreshSafely());
-        JButton clearButton = UiStyles.secondaryButton("Clear");
+        JButton clearButton = UiStyles.quietButton("Clear");
         clearButton.addActionListener(event -> clearFilters());
 
         JPanel filters = UiStyles.card();
+        filters.setBorder(UiStyles.compactCardBorder());
         filters.setLayout(new GridBagLayout());
         GridBagConstraints constraints = new GridBagConstraints();
         constraints.insets = new Insets(3, 4, 3, 4);
